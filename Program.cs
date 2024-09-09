@@ -1,4 +1,30 @@
-﻿class Program
+﻿public enum TokenType // Constantes utilizadas
+{
+    Identifier,
+    Keyword,
+    Number,
+    String,
+    Operator,
+    Delimiter, 
+    Whitespace,
+    Comment, 
+    EOF 
+}
+public class Token
+{
+    public TokenType Type { get; }
+    public string Value { get; }
+
+    public Token(TokenType type, string value)
+    {
+        Type = type;
+        Value = value;
+    }
+
+    public override string ToString() => $"{Type}: {Value}"; // funcion de impresion de tokens
+}
+
+class Program
 {
     static void Main(string[] args)
     {
@@ -28,6 +54,8 @@
             List<Token> tokens = lexer.GetTokens();
 
             // Imprimir los tokens
+                Console.WriteLine("Type: Value");
+                Console.WriteLine("");
             foreach (var token in tokens)
             {
                 Console.WriteLine(token);
@@ -49,9 +77,9 @@ public class Lexer
     {
         _input = input;
     }
-
-    private char CurrentChar => _position < _input.Length ? _input[_position] : '\0';
-
+    
+    // Checar si la posicion está in-bounds, si no, retornar null
+    private char CurrentChar => _position < _input.Length ? _input[_position] : '\0'; 
     private void Advance() => _position++;
 
     public List<Token> GetTokens()
@@ -66,15 +94,15 @@ public class Lexer
             }
             else if (char.IsLetter(CurrentChar))
             {
-                tokens.Add(ReadIdentifier()); 
+                tokens.Add(ReadIdentifier()); // Si es una letra, checar si es keyword, si no, agregar como identificador
             }
             else if (char.IsDigit(CurrentChar))
             {
-                tokens.Add(ReadNumber());
+                tokens.Add(ReadNumber()); // Si es digito leer todo el numero y agregar como numero
             }
             else
             {
-                tokens.Add(ReadSymbol());
+                tokens.Add(ReadSymbol()); // Si es un simbolo, checar el tipo de simbolo
             }
         }
 
@@ -108,96 +136,83 @@ public class Lexer
         return new Token(TokenType.Number, result);
     }
 
-private Token ReadSymbol()
-{
-    char current = CurrentChar;
-    Advance();
-
-    switch (current)
+    private Token ReadSymbol()
     {
-        case '+':
-            return new Token(TokenType.Operator, "+");
-        case '-':
-            return new Token(TokenType.Operator, "-");
-        case '*':
-            return new Token(TokenType.Operator, "*");
-        case '/':
-            return new Token(TokenType.Operator, "/");
-        case ';':
-            return new Token(TokenType.Delimiter, ";");
-        case '(':
-            return new Token(TokenType.Delimiter, "(");
-        case ')':
-            return new Token(TokenType.Delimiter, ")");
-        case '{':
-            return new Token(TokenType.Delimiter, "{");
-        case '}':
-            return new Token(TokenType.Delimiter, "}");
-        case '>':
-            if (CurrentChar == '=') // Manejar >=
-            {
-                Advance();
-                return new Token(TokenType.Operator, ">=");
-            }
-            return new Token(TokenType.Operator, ">");
-        case '<':
-            if (CurrentChar == '=') // Manejar <=
-            {
-                Advance();
-                return new Token(TokenType.Operator, "<=");
-            }
-            return new Token(TokenType.Operator, "<");
-        case '=':
-            if (CurrentChar == '=') // Manejar ==
-            {
-                Advance();
-                return new Token(TokenType.Operator, "==");
-            }
-            return new Token(TokenType.Operator, "=");
-        case '!':
-            if (CurrentChar == '=') // Manejar !=
-            {
-                Advance();
-                return new Token(TokenType.Operator, "!=");
-            }
-            throw new Exception($"Unknown symbol: {current}");
-        default:
-            throw new Exception($"Unknown symbol: {current}");
-    }
-}
+        char current = CurrentChar;
+        Advance();
 
+        switch (current)
+        {
+            case '+':
+                return new Token(TokenType.Operator, "+");
+            case '-':
+                return new Token(TokenType.Operator, "-");
+            case '*':
+                return new Token(TokenType.Operator, "*");
+            case '/':
+            if (CurrentChar == '/') 
+                {
+                    Advance();
+                    SkipSingleLineComment(); // Saltar linea si lee "//"
+                    return null; // Retornar null, no generar token
+                }
+                return new Token(TokenType.Operator, "/");
+            case ';':
+                return new Token(TokenType.Delimiter, ";");
+            case '(':
+                return new Token(TokenType.Delimiter, "(");
+            case ')':
+                return new Token(TokenType.Delimiter, ")");
+            case '{':
+                return new Token(TokenType.Delimiter, "{");
+            case '}':
+                return new Token(TokenType.Delimiter, "}");
+            case '>':
+                if (CurrentChar == '=') // Manejar >=
+                {
+                    Advance();
+                    return new Token(TokenType.Operator, ">=");
+                }
+                return new Token(TokenType.Operator, ">");
+            case '<':
+                if (CurrentChar == '=') // Manejar <=
+                {
+                    Advance();
+                    return new Token(TokenType.Operator, "<=");
+                }
+                return new Token(TokenType.Operator, "<");
+            case '=':
+                if (CurrentChar == '=') // Manejar ==
+                {
+                    Advance();
+                    return new Token(TokenType.Operator, "==");
+                }
+                return new Token(TokenType.Operator, "=");
+            case '!':
+                if (CurrentChar == '=') // Manejar !=
+                {
+                    Advance();
+                    return new Token(TokenType.Operator, "!=");
+                }
+                throw new Exception($"Unknown symbol: {current}");
+            default:
+                throw new Exception($"Unknown symbol: {current}");
+        }
+    }
+    private void SkipSingleLineComment()
+    {
+        // Avanzar hasta que el caracter leido sea el final de la linea
+        while (CurrentChar != '\n' && CurrentChar != '\0')
+        {
+            Advance();
+        }
+       
+    }
     private bool IsKeyword(string word)
     {
+        // Palabras reservadas
         string[] keywords = { "if", "else", "while", "for", "return" };
+        // Comparar si la palabra de entrada (word) se encuentra dentro de (keywords)
         return Array.Exists(keywords, keyword => keyword == word);
     }
 }
-
-public enum TokenType
-{
-    Identifier,
-    Keyword,
-    Number,
-    String,
-    Operator,
-    Delimiter, 
-    Whitespace, // Espacio en blanco
-    Comment, 
-    EOF // End of file
-}
-
-public class Token
-{
-    public TokenType Type { get; }
-    public string Value { get; }
-
-    public Token(TokenType type, string value)
-    {
-        Type = type;
-        Value = value;
-    }
-
-    public override string ToString() => $"{Type}: {Value}";
-}
-
-

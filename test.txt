@@ -1,1 +1,2 @@
-if (x > 10) return x + 1;
+if (x > 10) return x + 1; // some comment 1
+else return y - 1; // some comment
