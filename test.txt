@@ -1,2 +1,4 @@
-if (x > 10) return xyx + 1; // some comment 1
+int y = 10;
+float z = 20;
+if (x > 10) return y + 1; // some comment 1
 else return y - 1; // some comment

@@ -1,4 +1,6 @@
-﻿public enum TokenType // Constantes utilizadas
+﻿using System.ComponentModel.DataAnnotations;
+
+public enum TokenType // Constantes utilizadas
 {
     Identifier,
     Keyword,
@@ -6,23 +8,23 @@
     String,
     Operator,
     Delimiter, 
-    Whitespace,
-    Comment, 
+
 }
 public class Token
 {
     public TokenType Type { get; }
     public string Value { get; }
+    public string DataType { get; }
+    public bool IsKeyword{ get; }
 
-    public Token(TokenType type, string value)
+    public Token(TokenType type, string value, bool isKeyword = false, string dataType = "")
     {
         Type = type;
         Value = value;
-        //type
-        //iskeyword
+        IsKeyword = isKeyword;
+        DataType = dataType;
     }
-
-    public override string ToString() => $"{Type}: {Value}"; // funcion de impresion de tokens
+    
 }
 
 class Program
@@ -55,16 +57,29 @@ class Program
             List<Token> tokens = lexer.GetTokens();
 
             // Imprimir los tokens
-                Console.WriteLine("Type: Value");
-                Console.WriteLine("");
-            foreach (var token in tokens)
-            {
-                Console.WriteLine(token);
-            }
+            PrintTokens(tokens);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error al leer el archivo: {ex.Message}");
+        }
+    }
+
+    private static void PrintTokens(List<Token> tokens)
+    {
+        // Header
+        string header = $"{"Type",-15} {"Value",-20} {"IsKeyword",-10} {"DataType",-10}";
+        Console.WriteLine(header);
+        Console.WriteLine(new string('-',header.Length));
+
+        // Tabla
+        foreach(var token in tokens){
+            string type = token.Type.ToString();
+            string value = token.Value;
+            string isKeyword = token.IsKeyword ? "Yes" : "No";
+            string dataType = token.DataType ?? "-";  // Checar si es null el tipo de dato, usar "-" si es null. (no funciona?) 
+
+            Console.WriteLine($"{type,-15} {value,-20} {isKeyword,-10} {dataType,-10}");
         }
     }
 }
@@ -73,7 +88,7 @@ public class Lexer
 {
     private readonly string _input;
     private int _position = 0;
-
+    private string currentDataType = null;
     public Lexer(string input)
     {
         _input = input;
@@ -95,7 +110,24 @@ public class Lexer
             }
             else if (char.IsLetter(CurrentChar))
             {
-                tokens.Add(ReadIdentifier()); // Si es una letra, checar si es keyword, si no, agregar como identificador
+                var idToken = ReadIdentifier();
+                
+                // Si el identificador es una palabra reservada y tambien un tipo de dato
+                if (idToken.Type == TokenType.Keyword && IsDataType(idToken.Value))
+                {
+                    currentDataType = idToken.Value; // para guardar el tipo de dato si se encuentra en la lista
+                    tokens.Add(idToken);
+                }
+                // Si es un identificador y encontramos un tipo de dato anteriormente
+                else if (idToken.Type == TokenType.Identifier && currentDataType != null)
+                {
+                    tokens.Add(new Token(TokenType.Identifier, idToken.Value, false, currentDataType));
+                    currentDataType = null;
+                }
+                 else
+                {
+                    tokens.Add(idToken);
+                }
             }
             else if (char.IsDigit(CurrentChar))
             {
@@ -103,13 +135,25 @@ public class Lexer
             }
             else
             {
-                tokens.Add(ReadSymbol()); // Si es un simbolo, checar el tipo de simbolo
+                var token = ReadSymbol(); // Si es un simbolo, checar el tipo de simbolo
+                if (token != null)
+                {
+                    tokens.Add(token);
+
+                    if (token.Value == ";" || token.Value == ",") // si acaba la linea de declaracion, reset el tipo de datos
+                    {
+                        currentDataType = null;
+                    }
+                } 
             }
         }
-
         return tokens;
     }
-
+    
+    private bool IsDataType(string word)
+    {
+        return word == "int" || word == "float" || word == "var"; 
+    }
     private Token ReadIdentifier()
     {
         string result = "";
@@ -119,10 +163,8 @@ public class Lexer
             Advance();
         }
 
-        if (IsKeyword(result))
-            return new Token(TokenType.Keyword, result);
-
-        return new Token(TokenType.Identifier, result);
+        bool isKeyword = IsKeyword(result);
+        return new Token(isKeyword ? TokenType.Keyword : TokenType.Identifier, result, isKeyword);
     }
 
     private Token ReadNumber()
@@ -143,30 +185,23 @@ public class Lexer
 
         switch (current)
         {
-            case '+':
-                return new Token(TokenType.Operator, "+");
-            case '-':
-                return new Token(TokenType.Operator, "-");
-            case '*':
-                return new Token(TokenType.Operator, "*");
+            case '+': return new Token(TokenType.Operator, "+");
+            case '-': return new Token(TokenType.Operator, "-");
+            case '*': return new Token(TokenType.Operator, "*");
             case '/':
             if (CurrentChar == '/')  // para checar comentarios
                 {
                     Advance();
                     SkipSingleLineComment(); // Saltar linea si lee "//"
-                    return null; // Retornar null, no generar token
+                    return null;
                 }
                 return new Token(TokenType.Operator, "/");
-            case ';':
-                return new Token(TokenType.Delimiter, ";");
-            case '(':
-                return new Token(TokenType.Delimiter, "(");
-            case ')':
-                return new Token(TokenType.Delimiter, ")");
-            case '{':
-                return new Token(TokenType.Delimiter, "{");
-            case '}':
-                return new Token(TokenType.Delimiter, "}");
+            case ';': return new Token(TokenType.Delimiter, ";");
+            case ',': return new Token(TokenType.Delimiter, ",");
+            case '(': return new Token(TokenType.Delimiter, "(");
+            case ')': return new Token(TokenType.Delimiter, ")");
+            case '{': return new Token(TokenType.Delimiter, "{");
+            case '}': return new Token(TokenType.Delimiter, "}");
             case '>':
                 if (CurrentChar == '=') // Manejar >=
                 {
@@ -208,11 +243,10 @@ public class Lexer
         }
        
     }
-    private bool IsKeyword(string word)
-    {
-        // Palabras reservadas
-        string[] keywords = { "if", "else", "while", "for", "return" };
-        // Comparar si la palabra de entrada (word) se encuentra dentro de (keywords)
-        return Array.Exists(keywords, keyword => keyword == word);
-    }
+    private static readonly HashSet<string> keywords = new HashSet<string>
+{
+    "if", "else", "while", "for", "return", "int", "float", "var"
+};
+
+private bool IsKeyword(string word) => keywords.Contains(word);
 }
