@@ -8,7 +8,6 @@
     Delimiter, 
     Whitespace,
     Comment, 
-    EOF 
 }
 public class Token
 {
@@ -19,6 +18,8 @@ public class Token
     {
         Type = type;
         Value = value;
+        //type
+        //iskeyword
     }
 
     public override string ToString() => $"{Type}: {Value}"; // funcion de impresion de tokens
@@ -106,7 +107,6 @@ public class Lexer
             }
         }
 
-        tokens.Add(new Token(TokenType.EOF, "EOF")); 
         return tokens;
     }
 
@@ -150,7 +150,7 @@ public class Lexer
             case '*':
                 return new Token(TokenType.Operator, "*");
             case '/':
-            if (CurrentChar == '/') 
+            if (CurrentChar == '/')  // para checar comentarios
                 {
                     Advance();
                     SkipSingleLineComment(); // Saltar linea si lee "//"
