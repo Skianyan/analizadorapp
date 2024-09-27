@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.Design;
 
 public enum TokenType // Constantes utilizadas
 {
@@ -25,6 +26,46 @@ public class Token
         DataType = dataType;
     }
     
+}
+public class NodoExpresion // definir el nodo y sus dos hijos.
+{
+    public Token Token { get; }
+    public NodoExpresion Izquierda { get; set; }
+    public NodoExpresion Derecha { get; set; }
+
+    public NodoExpresion(Token token){ 
+        Token = token;
+        Izquierda = null;
+        Derecha = null;
+    }
+}
+
+public class AnalizadorSintactico
+{
+    private List<Token> tokens;
+    private int pos;
+    private Token tokenActual;
+
+    public AnalizadorSintactico(List<Token> tokens)
+    {
+        this.tokens = tokens;
+        this.pos = 0;
+        this.tokenActual = tokens.Count > 0 ? tokens[0] : null;
+    }
+
+    private void Avanzar()
+    {
+        pos++;
+        if (pos < tokens.Count)
+        {
+            tokenActual = tokens[pos];
+        }
+        else
+        {
+            tokenActual = null;
+        }
+    }
+
 }
 
 class Program
@@ -57,7 +98,7 @@ class Program
             List<Token> tokens = lexer.GetTokens();
 
             // Imprimir los tokens
-            PrintTokens(tokens);
+            //PrintTokens(tokens); // para analizador lexico
         }
         catch (Exception ex)
         {
