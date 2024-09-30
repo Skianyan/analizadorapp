@@ -158,9 +158,13 @@ public class Lexer
        
     }
     private static readonly HashSet<string> keywords = new HashSet<string>
-{
-    "if", "else", "while", "for", "return", "int", "float", "var"
-};
+    {
+        "if", "else", "while", "for", "return", "int", "float", "var"
+    };
 
-private bool IsKeyword(string word) => keywords.Contains(word);
+    
+
+    private bool IsKeyword(string word) => keywords.Contains(word);
+
+
 }

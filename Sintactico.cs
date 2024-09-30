@@ -10,7 +10,7 @@ public class AnalizadorSintactico
         this.tokens = tokens;
         this.pos = 0;
         this.tokenActual = tokens.Count > 0 ? tokens[0] : null;
-        this.tablaSimbolos = new Dictionary<string, int>(); // Inicializamos la tabla de símbolos
+        this.tablaSimbolos = new Dictionary<string, int>(); // Inicializar tabla de símbolos
     }
 
     private void Avanzar()
