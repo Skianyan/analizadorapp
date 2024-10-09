@@ -57,7 +57,7 @@ public class AnalizadorSintactico
 
                 if (tokenActual != null && tokenActual.Value == ";")
                 {
-                    Avanzar(); // Avanzamos sobre el ';'
+                    Avanzar();
                 }
                 else
                 {
@@ -108,9 +108,11 @@ public class AnalizadorSintactico
 
     private NodoExpresion Factor()
     {
-        Token token = tokenActual; //definimos tokenActual como el token en el que estamos
-
-        if (token.Type == TokenType.Number) // si es de tipo numero, regresarlo como esta
+        Token token = tokenActual; //definimos token como el tokenActual 
+        if (tokenActual.Value == "if"){ 
+            ManejarIf();
+        }
+        if (token.Type == TokenType.Number) // si es de tipo numero, regresarlo como está
         {
             Avanzar();
             return new NodoExpresion(token);
@@ -147,7 +149,16 @@ public class AnalizadorSintactico
         Error("Token inesperado");
         return null;
     }
+    // manejar expresiones if
+    private void ManejarIf(){
+        Avanzar();
+        if(tokenActual.Value == "("){
+            Avanzar();
+            ProcesarDeclaracion();
+        }
 
+        
+    }
     // metodo para procesar declaraciones de variables
     public void ProcesarDeclaracion()
     {

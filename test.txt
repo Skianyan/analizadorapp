@@ -1,3 +1,8 @@
 int x = 5;
 float y = 2;
-x + (3 - y);
+if (x > 4){
+    x = 2;
+}
+else{
+    x = 6;
+}
