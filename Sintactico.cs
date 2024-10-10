@@ -4,6 +4,8 @@ public class AnalizadorSintactico
     private int pos;
     private Token tokenActual;
     private Dictionary<string, int> tablaSimbolos;  // Almacenar variables y sus valores
+    private Stack<NodoExpresion> operandos; // Pila para operandos (nodos de expresiones)
+    private Stack<Token> operadores; // Pila para operadores
 
     public AnalizadorSintactico(List<Token> tokens)
     {
@@ -11,6 +13,8 @@ public class AnalizadorSintactico
         this.pos = 0;
         this.tokenActual = tokens.Count > 0 ? tokens[0] : null;
         this.tablaSimbolos = new Dictionary<string, int>(); // Inicializar tabla de símbolos
+        this.operandos = new Stack<NodoExpresion>();
+        this.operadores = new Stack<Token>();
     }
 
     private void Avanzar()
@@ -25,16 +29,16 @@ public class AnalizadorSintactico
             tokenActual = null;
         }
     }
-    
+
     private void Error(string mensaje)
     {
         throw new Exception("Error de tipo: " + mensaje);
     }
 
-    public bool isNumericType(string value){
-        string[] numericTypes = {"var", "int", "float", "numeric"};
-        bool exists = Array.Exists(numericTypes, type => type.Equals(value, StringComparison.OrdinalIgnoreCase));
-        return exists;
+    public bool isNumericType(string value)
+    {
+        string[] numericTypes = { "var", "int", "float", "numeric" };
+        return Array.Exists(numericTypes, type => type.Equals(value, StringComparison.OrdinalIgnoreCase));
     }
 
     // Método para procesar múltiples instrucciones
@@ -67,93 +71,87 @@ public class AnalizadorSintactico
         }
     }
 
+    // Modificar este método para usar la pila (Shunting Yard Algorithm)
     private NodoExpresion Expresion()
     {
-        NodoExpresion nodo = Termino();
-
-        while (tokenActual != null && (tokenActual.Value == "+" || tokenActual.Value == "-"))
+        while (tokenActual != null && tokenActual.Value != ";")
         {
-            Token operador = tokenActual;
-            Avanzar();
-            NodoExpresion nodoDerecho = Termino();
-            NodoExpresion nuevoNodo = new NodoExpresion(operador)
+            if (tokenActual.Type == TokenType.Number || tokenActual.Type == TokenType.Identifier)
             {
-                Izquierda = nodo,
-                Derecha = nodoDerecho
-            };
-            nodo = nuevoNodo;
-        }
-        return nodo;
-    }
-
-    private NodoExpresion Termino()
-    {   
-        NodoExpresion nodo = Factor();
-
-        while (tokenActual != null && (tokenActual.Value == "*" || tokenActual.Value == "/"))
-        {
-            Token operador = tokenActual;
-            Avanzar();
-            NodoExpresion nodoDerecho = Factor();
-            NodoExpresion nuevoNodo = new NodoExpresion(operador)
-            {
-                Izquierda = nodo,
-                Derecha = nodoDerecho
-            };
-            nodo = nuevoNodo;
-        }
-
-        return nodo;
-    }
-
-    private NodoExpresion Factor()
-    {
-        Token token = tokenActual; //definimos tokenActual como el token en el que estamos
-
-        if (token.Type == TokenType.Number) // si es de tipo numero, regresarlo como esta
-        {
-            Avanzar();
-            return new NodoExpresion(token);
-        }
-        else if (token.Type == TokenType.Identifier) // si es de tipo identificador
-        {
-            Avanzar();
-            //return new NodoExpresion(token); // retornar el nombre de la variable
-
-            if (tablaSimbolos.ContainsKey(token.Value)) // si el valor se encuentra dentro de la tabla de simbolos, regresar su valor
-            {
-                return new NodoExpresion(new Token(TokenType.Number, tablaSimbolos[token.Value].ToString()));
-            }
-            else
-            {
-                Error("Variable no declarada: " + token.Value);
-            }
-        }
-        else if (token.Value == "(")
-        {
-            Avanzar();
-            NodoExpresion nodo = Expresion();
-            if (tokenActual != null && tokenActual.Value == ")")
-            {
+                operandos.Push(new NodoExpresion(tokenActual)); // Si es número o identificador, lo metemos en la pila de operandos
                 Avanzar();
-                return nodo;
             }
-            else
+            else if (tokenActual.Type == TokenType.Operator)
             {
-                Error("Se esperaba ')'");
+                while (operadores.Count > 0 && Precedencia(operadores.Peek()) >= Precedencia(tokenActual))
+                {
+                    ProcesarOperador(); // Procesamos los operadores de mayor o igual precedencia
+                }
+                operadores.Push(tokenActual); // Añadimos el operador a la pila
+                Avanzar();
+            }
+            else if (tokenActual.Value == "(")
+            {
+                operadores.Push(tokenActual); // Añadimos el paréntesis izquierdo
+                Avanzar();
+            }
+            else if (tokenActual.Value == ")")
+            {
+                while (operadores.Peek().Value != "(")
+                {
+                    ProcesarOperador(); // Procesar todos los operadores hasta el paréntesis izquierdo
+                }
+                operadores.Pop(); // Quitamos el paréntesis izquierdo
+                Avanzar();
             }
         }
 
-        Error("Token inesperado");
-        return null;
+        // Procesar cualquier operador restante en la pila
+        while (operadores.Count > 0)
+        {
+            ProcesarOperador();
+        }
+
+        // El nodo final en la pila de operandos será la raíz del árbol de la expresión
+        return operandos.Pop();
     }
 
-    // metodo para procesar declaraciones de variables
+    private void ProcesarOperador()
+    {
+        Token operador = operadores.Pop();
+        NodoExpresion derecha = operandos.Pop();
+        NodoExpresion izquierda = operandos.Pop();
+
+        NodoExpresion nuevoNodo = new NodoExpresion(operador)
+        {
+            Izquierda = izquierda,
+            Derecha = derecha
+        };
+
+        operandos.Push(nuevoNodo);
+    }
+
+    private int Precedencia(Token operador)
+    {
+        switch (operador.Value)
+        {
+            case "+":
+            case "-":
+                return 1;
+            case "*":
+            case "/":
+                return 2;
+            default:
+                return 0;
+        }
+    }
+
+    // método para procesar declaraciones de variables
     public void ProcesarDeclaracion()
     {
         if (tokenActual.Type == TokenType.Keyword && isNumericType(tokenActual.Value))
         {
-            Avanzar(); 
+            Avanzar();
             if (tokenActual.Type == TokenType.Identifier) // si el token es de tipo identifier
             {
                 string nombreVariable = tokenActual.Value;
@@ -161,7 +159,7 @@ public class AnalizadorSintactico
 
                 if (tokenActual.Value == "=")  // si el token es una asignacion
                 {
-                    Avanzar(); 
+                    Avanzar();
                     NodoExpresion expresion = Expresion();
 
                     // evaluar la expresión (suponiendo que solo tenemos números, no expresiones)
@@ -191,7 +189,6 @@ public class AnalizadorSintactico
         }
     }
 
-    // metodo para evaluar una expresión y devolver su valor (no se ocupa?)
     private int EvaluarExpresion(NodoExpresion nodo)
     {
         if (nodo == null)
@@ -203,6 +200,19 @@ public class AnalizadorSintactico
         if (nodo.Token.Type == TokenType.Number)
         {
             return int.Parse(nodo.Token.Value);
+        }
+
+        // si el nodo es un identificador (variable), buscamos su valor en la tabla de símbolos
+        if (nodo.Token.Type == TokenType.Identifier)
+        {
+            if (tablaSimbolos.ContainsKey(nodo.Token.Value))
+            {
+                return tablaSimbolos[nodo.Token.Value];
+            }
+            else
+            {
+                Error($"Variable no declarada: {nodo.Token.Value}");
+            }
         }
 
         // si es una operación, realizamos la evaluacion
@@ -225,16 +235,7 @@ public class AnalizadorSintactico
         }
     }
 
-    // imprimir el arbol sintáctico
-    public static void ImprimirArbol(NodoExpresion nodo, int nivel = 0)
-    {
-        if (nodo != null)
-        {
-            ImprimirArbol(nodo.Derecha, nivel + 1);
-            Console.WriteLine(new string(' ', nivel * 4) + nodo.Token.Value);
-            ImprimirArbol(nodo.Izquierda, nivel + 1);
-        }
-    }
+
     public void ImprimirTablaSimbolos()
     {
         Console.WriteLine("\nTabla de Símbolos:");
@@ -246,4 +247,13 @@ public class AnalizadorSintactico
         }
     }
 
+    public static void ImprimirArbol(NodoExpresion nodo, int nivel = 0)
+    {
+        if (nodo != null)
+        {
+            ImprimirArbol(nodo.Derecha, nivel + 1);
+            Console.WriteLine(new string(' ', nivel * 4) + nodo.Token.Value);
+            ImprimirArbol(nodo.Izquierda, nivel + 1);
+        }
+    }
 }
