@@ -103,10 +103,10 @@ public class Lexer
             case '-': return new Token(TokenType.Operator, "-");
             case '*': return new Token(TokenType.Operator, "*");
             case '/':
-            if (CurrentChar == '/')  // para checar comentarios
+                if (CurrentChar == '/')  // para checar comentarios
                 {
                     Advance();
-                    SkipSingleLineComment(); // Saltar linea si lee "//"
+                    SkipSingleLineComment(); // Saltar línea si lee "//"
                     return null;
                 }
                 return new Token(TokenType.Operator, "/");
@@ -114,8 +114,10 @@ public class Lexer
             case ',': return new Token(TokenType.Delimiter, ",");
             case '(': return new Token(TokenType.Delimiter, "(");
             case ')': return new Token(TokenType.Delimiter, ")");
-            case '{': return new Token(TokenType.Delimiter, "{");
-            case '}': return new Token(TokenType.Delimiter, "}");
+            case '{': 
+                return new Token(TokenType.Delimiter, "{"); // Procesar bloque de apertura
+            case '}': 
+                return new Token(TokenType.Delimiter, "}"); // Procesar bloque de cierre
             case '>':
                 if (CurrentChar == '=') // Manejar >=
                 {
@@ -143,11 +145,12 @@ public class Lexer
                     Advance();
                     return new Token(TokenType.Operator, "!=");
                 }
-                throw new Exception($"Unknown symbol: {current}");
+                throw new Exception($"Símbolo desconocido: {current}");
             default:
-                throw new Exception($"Unknown symbol: {current}");
+                throw new Exception($"Símbolo desconocido: {current}");
         }
     }
+
     private void SkipSingleLineComment()
     {
         // Avanzar hasta que el caracter leido sea el final de la linea
