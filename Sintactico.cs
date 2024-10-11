@@ -7,6 +7,9 @@ public class AnalizadorSintactico
     private Stack<NodoExpresion> operandos; // Pila para operandos (nodos de expresiones)
     private Stack<Token> operadores; // Pila para operadores
 
+    public int initialPosition = 0;
+    public bool inWhileloop = false;
+
     public AnalizadorSintactico(List<Token> tokens)
     {
         this.tokens = tokens;
@@ -81,9 +84,10 @@ public class AnalizadorSintactico
 
     // Metodos de Procesamiento
     // Método para procesar múltiples instrucciones
-    public void ParsearInstrucciones()
+
+    public void ParsearWhile()
     {
-        while (tokenActual != null)
+        while(tokenActual != null && inWhileloop == true)
         {
             if (tokenActual.Type == TokenType.Keyword && isNumericType(tokenActual.Value))
             {
@@ -96,6 +100,47 @@ public class AnalizadorSintactico
             else if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "while")
             {
                 ProcesarWhile();  // Procesamos la sentencia "While"
+            }
+            else
+            {
+                NodoExpresion expresion = Expresion(); // Procesamos la expresión cuando no es un "if"
+                
+                Console.WriteLine("\nÁrbol Sintáctico de la Expresión:");
+                ImprimirArbol(expresion); // Imprimir el árbol sintáctico
+
+                int resultado = EvaluarExpresion(expresion);
+                Console.WriteLine($"Resultado de la expresión: {resultado}");
+
+                if (tokenActual != null && tokenActual.Value == ";")
+                {
+                    Avanzar(); // Avanzamos sobre el ';'
+                }
+                else
+                {
+                    Error("Se esperaba ';' al final de la expresión.");
+                }
+                inWhileloop = false;
+            }
+        }
+    }
+    public void ParsearInstrucciones()
+    {
+        while (tokenActual != null)
+        {
+            if (tokenActual.Type == TokenType.Keyword && isNumericType(tokenActual.Value))
+            {
+                ProcesarDeclaracion(); // Procesamos la declaración de variables
+            }
+            else if (tokenActual.Type == TokenType.Keyword && (tokenActual.Value == "if" || tokenActual.Value == "else"))
+            {
+                ProcesarIf();  // Procesamos la sentencia "if"
+            }
+            else if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "while")
+            {
+                ProcesarWhile();  // Procesamos la sentencia "While"
+            }
+            else if (inWhileloop == false && tokenActual.Value == "}"){
+                break;
             }
             else
             {
@@ -141,7 +186,16 @@ public class AnalizadorSintactico
 
         Console.WriteLine($"Condición evaluada: {resultadoCondicion}");
 
-        if (resultadoCondicion == 1)
+        if (resultadoCondicion == 1 && inWhileloop == true)
+        {
+            // Si la condición es verdadera, procesamos el bloque "if"
+            if (tokenActual.Value == "{")
+            {
+                Avanzar();  // Avanzar para pasar el corchete de apertura
+                ParsearWhile();  // Procesar el bloque de instrucciones
+            }
+        }
+        else if (resultadoCondicion == 1)
         {
             // Si la condición es verdadera, procesamos el bloque "if"
             if (tokenActual.Value == "{")
@@ -180,6 +234,7 @@ public class AnalizadorSintactico
 
    private void ProcesarWhile()
     {
+        inWhileloop = true;
         Avanzar();  // Avanzamos para pasar la palabra clave "while"
         if (tokenActual.Value != "(")
         {
@@ -199,16 +254,20 @@ public class AnalizadorSintactico
         // Evaluar la condición inicial
         int resultadoCondicion = EvaluarExpresion(condicion);
 
+        initialPosition = this.pos;
         // Repetir mientras la condición sea verdadera
         while (resultadoCondicion == 1)
         {
+            inWhileloop = true;
+            this.pos = initialPosition;
+            tokenActual = tokens[pos];
             // Procesar el bloque de instrucciones dentro del while
             if (tokenActual.Value == "{")
             {
                 Avanzar();  // Avanzamos para pasar el corchete de apertura
-
+                
                 // Procesar las instrucciones dentro del ciclo
-                ParsearInstrucciones();
+                ParsearWhile();
 
                 // Después de ejecutar el bloque de instrucciones, reevaluamos la condición
                 resultadoCondicion = EvaluarExpresion(condicion);
@@ -216,6 +275,7 @@ public class AnalizadorSintactico
                 // Si la condición es falsa, salimos del ciclo
                 if (resultadoCondicion != 1)
                 {
+                    inWhileloop = false;
                     break;
                 }
             }
@@ -224,9 +284,12 @@ public class AnalizadorSintactico
                 Error("Se esperaba '{' al inicio del ciclo 'while'.");
             }
         }
-
+        
         Console.WriteLine($"Condición evaluada: {resultadoCondicion}");
-
+        if (tokenActual.Value != "}" == inWhileloop == true){
+            Avanzar();
+        }
+        inWhileloop = false;
     }
 
 
@@ -391,7 +454,18 @@ public class AnalizadorSintactico
             case "/":
                 return izquierda / derecha;
             case "=":
-                return izquierda = derecha;
+            if (nodo.Izquierda.Token.Type == TokenType.Identifier)
+            {
+                string nombreVariable = nodo.Izquierda.Token.Value;
+                int nuevoValor = derecha;
+                tablaSimbolos[nombreVariable] = nuevoValor;  // Actualizamos el valor de la variable
+                return nuevoValor;
+            }
+            else
+            {
+                Error("La asignación debe hacerse a una variable.");
+            }
+            return izquierda = derecha;
             case "<":
                 if (izquierda < derecha) return 1; else return 0;
             case ">":
@@ -400,6 +474,8 @@ public class AnalizadorSintactico
                 if (izquierda <= derecha) return 1; else return 0;
             case ">=":
                if (izquierda >= derecha) return 1; else return 0;   
+            case "==":
+               if (izquierda == derecha) return 1; else return 0;                  
 
             default:
                 Error("Operador desconocido: " + nodo.Token.Value);
