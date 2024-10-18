@@ -6,6 +6,8 @@ public class AnalizadorSintactico
     private Dictionary<string, int> tablaSimbolos;  // Almacenar variables y sus valores
     private Stack<NodoExpresion> operandos; // Pila para operandos (nodos de expresiones)
     private Stack<Token> operadores; // Pila para operadores
+    private Queue<Token> colaTokens; // cola de todos los Tokens
+
 
     public int initialPosition = 0;
     public bool inWhileloop = false;
@@ -18,6 +20,7 @@ public class AnalizadorSintactico
         this.tablaSimbolos = new Dictionary<string, int>(); // Inicializar tabla de símbolos
         this.operandos = new Stack<NodoExpresion>();
         this.operadores = new Stack<Token>();
+        this.colaTokens = new Queue<Token>(); // inicializar cola de tokens
     }
 
     private int Precedencia(Token operador)
@@ -38,6 +41,11 @@ public class AnalizadorSintactico
 // Funciones Helper
     private void Avanzar()
     {
+        if (tokenActual != null)
+        {
+            colaTokens.Enqueue(tokenActual);  // Guardar el token en la pila al ser leído.
+        }
+
         pos++;
         if (pos < tokens.Count)
         {
@@ -47,6 +55,30 @@ public class AnalizadorSintactico
         {
             tokenActual = null;
         }
+    }
+
+    private List<Token> ConvertirAPostfijo()
+    {
+        Stack<Token> operadores = new Stack<Token>();
+        Stack<Token> parentesis = new Stack<Token>();
+        List<Token> salida = new List<Token>();
+
+        foreach (var token in colaTokens)
+        {
+            if(token.Value == "("){
+                parentesis.Push(token);
+            }
+            else if(token.IsKeyword){
+                
+            }
+        }
+
+        while (operadores.Count > 0)
+        {
+            salida.Add(operadores.Pop());  // Vaciar los operadores restantes.
+        }
+
+        return salida;
     }
 
     private void SaltarBloque()
@@ -503,4 +535,12 @@ public class AnalizadorSintactico
             ImprimirArbol(nodo.Izquierda, nivel + 1);
         }
     }
+
+    public void FinalizarAnalisis()
+    {
+        List<Token> listapostfijo = ConvertirAPostfijo();  // Convertir a notación postfija.
+
+        Console.WriteLine("\nÁrbol Sintáctico Generado:");
+    }
+
 }

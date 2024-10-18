@@ -1,8 +1,5 @@
 int x = 0;
 float y = 0;
-while (x < 2) {
-    x = x + 1;
-}
 if (y == 1) {
     x = 1;   
 } 

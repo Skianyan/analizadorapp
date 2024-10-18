@@ -42,8 +42,9 @@ class Program
 
             // Procesar todas las instrucciones
             parser.ParsearInstrucciones();
-
+            parser.FinalizarAnalisis();
             parser.ImprimirTablaSimbolos(); // imprime los simbolos y sus valores.
+            
         }
         catch (Exception ex)
         {
