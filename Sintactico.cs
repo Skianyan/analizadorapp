@@ -325,7 +325,7 @@ public class AnalizadorSintactico
     }
 
 
-    // Modificar este método para usar la pila (Shunting Yard Algorithm)
+    // Modificar este método para usar la pila (Shunting Yard)
     private NodoExpresion Expresion(bool esCondicionIf = false)
     {
         while (tokenActual != null && (esCondicionIf ? tokenActual.Value != ")" : tokenActual.Value != ";"))
@@ -544,3 +544,10 @@ public class AnalizadorSintactico
     }
 
 }
+
+/*
+    Agregar todos los token a una pila al momento de ser evaluados para crear un arbol al final
+
+    -- crear un stack con todos los token leidos
+    -- recorrerlo de manera postfija para generar un arbol sintactico
+*/
