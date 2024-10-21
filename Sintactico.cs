@@ -8,7 +8,6 @@ public class AnalizadorSintactico
     private Stack<Token> operadores; // Pila para operadores
     private Queue<Token> colaTokens; // cola de todos los Tokens
 
-
     public int initialPosition = 0;
     public bool inWhileloop = false;
 
@@ -57,37 +56,13 @@ public class AnalizadorSintactico
         }
     }
 
-    private List<Token> ConvertirAPostfijo()
-    {
-        Stack<Token> operadores = new Stack<Token>();
-        Stack<Token> parentesis = new Stack<Token>();
-        List<Token> salida = new List<Token>();
-
-        foreach (var token in colaTokens)
-        {
-            if(token.Value == "("){
-                parentesis.Push(token);
-            }
-            else if(token.IsKeyword){
-                
-            }
-        }
-
-        while (operadores.Count > 0)
-        {
-            salida.Add(operadores.Pop());  // Vaciar los operadores restantes.
-        }
-
-        return salida;
-    }
-
     private void SaltarBloque()
     {
         int contadorLlaves = 1;
-        Avanzar();  // Avanzar para pasar la llave de apertura
-
+        Avanzar();  // Avanzar al siguiente token
         while (contadorLlaves > 0 && tokenActual != null)
         {
+           
             if (tokenActual.Value == "{")
             {
                 contadorLlaves++;  // Encontramos otra llave de apertura
@@ -96,8 +71,7 @@ public class AnalizadorSintactico
             {
                 contadorLlaves--;  // Encontramos una llave de cierre
             }
-
-            Avanzar();  // Avanzar al siguiente token
+             Avanzar();  // Avanzar al siguiente token
         }
     }
 
@@ -138,7 +112,7 @@ public class AnalizadorSintactico
                 NodoExpresion expresion = Expresion(); // Procesamos la expresión cuando no es un "if"
                 
                 Console.WriteLine("\nÁrbol Sintáctico de la Expresión:");
-                ImprimirArbol(expresion); // Imprimir el árbol sintáctico
+                //ImprimirArbol(expresion); // Imprimir el árbol sintáctico
 
                 int resultado = EvaluarExpresion(expresion);
                 Console.WriteLine($"Resultado de la expresión: {resultado}");
@@ -162,14 +136,17 @@ public class AnalizadorSintactico
             if (tokenActual.Type == TokenType.Keyword && isNumericType(tokenActual.Value))
             {
                 ProcesarDeclaracion(); // Procesamos la declaración de variables
+
             }
             else if (tokenActual.Type == TokenType.Keyword && (tokenActual.Value == "if" || tokenActual.Value == "else"))
             {
                 ProcesarIf();  // Procesamos la sentencia "if"
+
             }
             else if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "while")
             {
                 ProcesarWhile();  // Procesamos la sentencia "While"
+                
             }
             else if (inWhileloop == false && tokenActual.Value == "}"){
                 break;
@@ -235,6 +212,10 @@ public class AnalizadorSintactico
                 Avanzar();  // Avanzar para pasar el corchete de apertura
                 ParsearInstrucciones();  // Procesar el bloque de instrucciones
             }
+            Avanzar();
+            if (tokenActual.Value == "else"){
+                SaltarBloque();  // Saltar el bloque "else"
+            }
         }
         else
         {
@@ -252,15 +233,14 @@ public class AnalizadorSintactico
                     ParsearInstrucciones();  // Procesar el bloque "else"
                 }
             }
-        }
-
-        if (tokenActual.Value == "}")
-        {
-            Avanzar();  // Avanzar para pasar el corchete de cierre
-        }
-        else
-        {
-            Error("Se esperaba '}' al final del bloque 'if'.");
+            if (tokenActual.Value == "}")
+            {
+                Avanzar();  // Avanzar para pasar el corchete de cierre
+            }
+            else
+            {
+                Error("Se esperaba '}' al final del bloque 'else'.");
+            }
         }
     }
 
@@ -417,11 +397,11 @@ public class AnalizadorSintactico
                 {
                     Avanzar();
                     NodoExpresion expresion = Expresion();
-
+                    //ImprimirArbol(expresion);
                     // Evaluar la expresión (suponiendo que solo tenemos números, no expresiones)
                     int valor = EvaluarExpresion(expresion);
                     tablaSimbolos[nombreVariable] = valor; // Guardar la variable y su valor en la tabla de símbolos
-
+                    
                     Console.WriteLine($"Variable {nombreVariable} = {valor} declarada.");
                 }
 
@@ -535,12 +515,157 @@ public class AnalizadorSintactico
             ImprimirArbol(nodo.Izquierda, nivel + 1);
         }
     }
-
+    // COSAS PARA GENERAR EL ARBOL SINTACTICO
     public void FinalizarAnalisis()
     {
-        List<Token> listapostfijo = ConvertirAPostfijo();  // Convertir a notación postfija.
-
+        // reset los tokens
+        pos = 0;
+        tokenActual = tokens[pos];
+        
+        List<Token> listapostfijo = ConvertirAPostfija();  // Convertir a notación postfija.
+        Console.WriteLine("\nTokens en orden postfijo:");
+        foreach (var token in listapostfijo){
+            Console.WriteLine(token.Value);
+        }   
+        var arbol = ConstruirArbol(listapostfijo);
         Console.WriteLine("\nÁrbol Sintáctico Generado:");
+        ImprimirArbol(arbol);
+    }
+
+    public List<Token> ConvertirAPostfija()
+    {
+        Stack<Token> operadores = new Stack<Token>();  // Pila de operadores
+        Stack<Token> bloques = new Stack<Token>();    // Pila de Bloques
+        List<Token> salida = new List<Token>();      // Cola de salida
+
+        while (tokenActual != null)
+        {
+            if (tokenActual.Type == TokenType.Number || tokenActual.Type == TokenType.Identifier || tokenActual.Type == TokenType.Keyword)
+            {
+                salida.Add(tokenActual);  // Añadir operandos a la salida
+                Avanzar();
+            }
+            else if (tokenActual.Value == "(")
+            {
+                operadores.Push(tokenActual);  // Apilar paréntesis de apertura
+                Avanzar();
+            }
+            else if (tokenActual.Value == ")")
+            {
+                // Desapilar hasta encontrar el paréntesis de apertura
+                while (operadores.Count > 0 && operadores.Peek().Value != "(")
+                {
+                    salida.Add(operadores.Pop());
+                    Avanzar();
+                }
+                if (operadores.Count == 0 || operadores.Pop().Value != "(")
+                {
+                    Error("Paréntesis desbalanceados.");
+                }
+            }
+            else if (tokenActual.Value == "{")
+            {
+                bloques.Push(tokenActual);  // Apilar paréntesis de apertura
+                Avanzar();
+            }
+            else if (tokenActual.Value == "}")
+            {
+                // Desapilar hasta encontrar el paréntesis de apertura
+                while (operadores.Count > 0 && operadores.Peek().Value != "{")
+                {
+                    salida.Add(operadores.Pop());
+                    Avanzar();
+                }
+                if (bloques.Count == 0 || bloques.Pop().Value != "{")
+                {
+                    Error("Llaves desbalanceadas.");
+                }
+                Avanzar();
+            }
+            else if (tokenActual.Type == TokenType.Operator)
+            {
+                // Apilar operadores según su precedencia
+                while (operadores.Count > 0 &&
+                    Precedencia(operadores.Peek()) >= Precedencia(tokenActual) &&
+                    operadores.Peek().Value != "(")
+                {
+                    salida.Add(operadores.Pop());
+                    //Avanzar();
+                }
+                operadores.Push(tokenActual);
+                Avanzar();
+            }
+            else if (tokenActual.Value == "if")
+            {
+                operadores.Push(tokenActual);  // Apilar "if" para controlar el flujo
+            }
+            else if (tokenActual.Value == "else")
+            {
+                // Mover los tokens del bloque "if" al bloque "else"
+                while (operadores.Count > 0 && operadores.Peek().Value != "if")
+                {
+                    salida.Add(operadores.Pop());
+                    Avanzar();
+                }
+                // Agregar un separador entre los bloques if y else
+                salida.Add(new Token(TokenType.Separator, "?"));
+                Avanzar();
+            }
+            else if (tokenActual.Value == ";"){
+                while (operadores.Count > 0 && operadores.Peek().Value != "{")
+                {
+                    salida.Add(operadores.Pop());
+                    Avanzar();
+                }
+            }
+        }
+
+        // Desapilar los operadores restantes
+        while (operadores.Count > 0)
+        {
+            Token operador = operadores.Pop();
+            if (operador.Value == "(" || operador.Value == "{" )
+            {
+                Error("Bloques desbalanceados.");
+            }
+            salida.Add(operador);
+            Avanzar();
+        }
+
+        return salida;
+    }
+
+      public NodoExpresion ConstruirArbol(List<Token> tokens)
+    {
+        Stack<NodoExpresion> pila = new Stack<NodoExpresion>();
+
+        foreach (var token in tokens)
+        {
+            if (token.Type == TokenType.Number || token.Type == TokenType.Identifier)
+            {
+                // Crear un nodo para el token y apilarlo
+                pila.Push(new NodoExpresion(token));
+            }
+            else if (token.Type == TokenType.Operator)
+            {
+                // Sacar los dos nodos superiores de la pila
+                NodoExpresion derecha = pila.Pop();
+                NodoExpresion izquierda = pila.Pop();
+
+                // Crear un nuevo nodo para el operador
+                NodoExpresion nuevoNodo = new NodoExpresion(token)
+                {
+                    Izquierda = izquierda,
+                    Derecha = derecha
+                };
+
+                // Apilar el nuevo nodo
+                pila.Push(nuevoNodo);
+            }
+        }
+
+        // El único nodo restante es la raíz del árbol
+        return pila.Pop();
     }
 
 }

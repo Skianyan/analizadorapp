@@ -9,7 +9,7 @@ public enum TokenType // Constantes utilizadas
     String,
     Operator,
     Delimiter, 
-
+    Separator,
 }
 class Program
 {
