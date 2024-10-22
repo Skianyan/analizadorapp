@@ -607,9 +607,6 @@ public class AnalizadorSintactico
                     salida.Add(operadores.Pop());
                     Avanzar();
                 }
-                // Agregar un separador entre los bloques if y else
-                salida.Add(new Token(TokenType.Separator, "?"));
-                Avanzar();
             }
             else if (tokenActual.Value == ";"){
                 while (operadores.Count > 0 && operadores.Peek().Value != "{")
@@ -620,7 +617,6 @@ public class AnalizadorSintactico
             }
         }
 
-        // Desapilar los operadores restantes
         while (operadores.Count > 0)
         {
             Token operador = operadores.Pop();
@@ -635,7 +631,22 @@ public class AnalizadorSintactico
         return salida;
     }
 
-      public NodoExpresion ConstruirArbol(List<Token> tokens)
+    public NodoExpresion Arbolito(List<Token> tokens){
+        Stack<NodoExpresion> pila = new Stack<NodoExpresion>();
+        
+        NodoExpresion Raiz = new NodoExpresion(tokens[0]){
+            Izquierda = null,
+            Derecha = null
+        };
+
+        foreach (var token in tokens)
+        {
+            
+        }
+
+        return Raiz;
+    }
+    public NodoExpresion ConstruirArbol(List<Token> tokens)
     {
         Stack<NodoExpresion> pila = new Stack<NodoExpresion>();
 
@@ -643,28 +654,26 @@ public class AnalizadorSintactico
         {
             if (token.Type == TokenType.Number || token.Type == TokenType.Identifier)
             {
-                // Crear un nodo para el token y apilarlo
+                // Crear un nodo con el token como raiz
                 pila.Push(new NodoExpresion(token));
             }
             else if (token.Type == TokenType.Operator)
             {
-                // Sacar los dos nodos superiores de la pila
                 NodoExpresion derecha = pila.Pop();
                 NodoExpresion izquierda = pila.Pop();
 
-                // Crear un nuevo nodo para el operador
+                // crear un nuevo nodo 
                 NodoExpresion nuevoNodo = new NodoExpresion(token)
                 {
                     Izquierda = izquierda,
                     Derecha = derecha
                 };
 
-                // Apilar el nuevo nodo
                 pila.Push(nuevoNodo);
             }
         }
 
-        // El único nodo restante es la raíz del árbol
+        // regresar la raiz..
         return pila.Pop();
     }
 
