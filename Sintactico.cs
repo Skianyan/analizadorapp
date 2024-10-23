@@ -527,9 +527,17 @@ public class AnalizadorSintactico
         foreach (var token in listapostfijo){
             Console.WriteLine(token.Value);
         }   
-        var arbol = ConstruirArbol(listapostfijo);
+        //var arbol = ConstruirArbol(listapostfijo);
         Console.WriteLine("\nÁrbol Sintáctico Generado:");
-        ImprimirArbol(arbol);
+        NodoExpresion Raiz = new NodoExpresion(null){
+            Izquierda = null,
+            Derecha = null
+        };
+        foreach (var token in listapostfijo){
+            InsertaNodo(token,ref Raiz);
+        } 
+        
+        //ImprimirArbol(arbol);
     }
 
     public List<Token> ConvertirAPostfija()
@@ -631,21 +639,21 @@ public class AnalizadorSintactico
         return salida;
     }
 
-    public NodoExpresion Arbolito(List<Token> tokens){
-        Stack<NodoExpresion> pila = new Stack<NodoExpresion>();
-        
-        NodoExpresion Raiz = new NodoExpresion(tokens[0]){
-            Izquierda = null,
-            Derecha = null
-        };
+     public void InsertaNodo(Token token, ref NodoExpresion nodo){
+          if (nodo == null)
+            {
+                NodoExpresion newnode = new NodoExpresion(token);
+                // CAMBIO 2
 
-        foreach (var token in tokens)
-        {
-            
-        }
-
-        return Raiz;
+                if (Raiz == null)
+                    Raiz = Nodo;
+            }
+            else if (token < Nodo.Dato)
+                InsertaNodo(token, ref nodo.Izquierda);
+            else if (token > nodo.Value)
+                InsertaNodo(token, ref nodo.Derecha);      
     }
+
     public NodoExpresion ConstruirArbol(List<Token> tokens)
     {
         Stack<NodoExpresion> pila = new Stack<NodoExpresion>();
