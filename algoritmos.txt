@@ -1,0 +1,22 @@
+El procedimiento para crear el árbol binario AST es el siguiente:
+
+    Para cada uno de los caracteres de la expresión postfija hacer lo siguiente:
+
+        Si el carácter analizado es un operando (a,b,c,d...), crea un nuevo nodo binario sin hijos 
+        que contenga el carácter y apílalo en la PILA.
+
+        Si el elemento analizado es un operador(+,-,*,/) , crea un nuevo nodo binario:
+
+            Extrae dos nodos binarios de la PILA.
+
+                El primer elemento extraído de la PILA será el hijo DERECHO del nuevo nodo binario.
+
+                El segundo elemento extraído de la PILA es el hijo IZQUIERDO del nuevo nodo binario.
+
+            El dato que almacenará el nuevo nodo binario será el carácter que representa el operador.
+
+            Una vez creado el nuevo nodo binario, apílalo en la PILA.
+
+    Por último, devuelve el nodo raíz del árbol binario AST creado y que es precisamente el 
+    que se obtiene de desapilar el único nodo binario restante que queda en la PILA.
+

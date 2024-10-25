@@ -111,11 +111,11 @@ public class AnalizadorSintactico
             {
                 NodoExpresion expresion = Expresion(); // Procesamos la expresión cuando no es un "if"
                 
-                Console.WriteLine("\nÁrbol Sintáctico de la Expresión:");
+                //Console.WriteLine("\nÁrbol Sintáctico de la Expresión:");
                 //ImprimirArbol(expresion); // Imprimir el árbol sintáctico
 
-                int resultado = EvaluarExpresion(expresion);
-                Console.WriteLine($"Resultado de la expresión: {resultado}");
+                //int resultado = EvaluarExpresion(expresion);
+                //Console.WriteLine($"Resultado de la expresión: {resultado}");
 
                 if (tokenActual != null && tokenActual.Value == ";")
                 {
@@ -154,11 +154,11 @@ public class AnalizadorSintactico
             else
             {
                 NodoExpresion expresion = Expresion(); // Procesamos la expresión cuando no es un "if"
-                Console.WriteLine("\nÁrbol Sintáctico de la Expresión:");
-                ImprimirArbol(expresion); // Imprimir el árbol sintáctico
+                //Console.WriteLine("\nÁrbol Sintáctico de la Expresión:");
+                //ImprimirArbol(expresion); // Imprimir el árbol sintáctico
 
-                int resultado = EvaluarExpresion(expresion);
-                Console.WriteLine($"Resultado de la expresión: {resultado}");
+                //int resultado = EvaluarExpresion(expresion);
+                //Console.WriteLine($"Resultado de la expresión: {resultado}");
 
                 if (tokenActual != null && tokenActual.Value == ";")
                 {
@@ -527,18 +527,67 @@ public class AnalizadorSintactico
         foreach (var token in listapostfijo){
             Console.WriteLine(token.Value);
         }   
-        //var arbol = ConstruirArbol(listapostfijo);
-        Console.WriteLine("\nÁrbol Sintáctico Generado:");
-        NodoExpresion Raiz = new NodoExpresion(null){
-            Izquierda = null,
-            Derecha = null
-        };
-        foreach (var token in listapostfijo){
-            InsertaNodo(token,ref Raiz);
-        } 
         
-        //ImprimirArbol(arbol);
+        // Console.WriteLine("\nÁrbol Sintáctico Generado:");
+        // NodoExpresion Raiz = new NodoExpresion(null){
+        //     Izquierda = null,
+        //     Derecha = null
+        // };
+        // foreach (var token in listapostfijo){
+        //     InsertaNodo(token,Raiz);
+        // } 
+        
+        var arbol = ConstruirArbol(listapostfijo);
+        ImprimirArbol(arbol);
     }
+
+   public NodoExpresion InsertaNodo(Token token, NodoExpresion nodo)
+    {
+        if (nodo == null)
+        {
+            // Crear un nuevo nodo para el token actual
+            return new NodoExpresion(token);
+        }
+        
+        // Si el token es un operador, insertar según la precedencia
+        if (token.Type == TokenType.Operator)
+        {
+            // Comparar la precedencia del operador actual con el nodo existente
+            if (Precedencia(token) > Precedencia(nodo.Token))
+            {
+                // Insertar a la izquierda del nodo actual
+                nodo.Izquierda = InsertaNodo(token, nodo.Izquierda);
+            }
+            else
+            {
+                // Insertar a la derecha (menor o igual precedencia)
+                nodo.Derecha = InsertaNodo(token, nodo.Derecha);
+            }
+        }
+        else
+        {
+            // Si es un operando (número o identificador), lo insertamos como hijo
+            if (nodo.Izquierda == null)
+            {
+                nodo.Izquierda = new NodoExpresion(token);
+            }
+            else if (nodo.Derecha == null)
+            {
+                nodo.Derecha = new NodoExpresion(token);
+            }
+            else
+            {
+                // Si ambos hijos están ocupados, manejar la colisión como necesites
+                Console.WriteLine("Ambos nodos ya ocupados. No se pueden insertar más operandos.");
+            }
+        }
+
+        // Retornar el nodo modificado
+        return nodo;
+    }
+
+
+
 
     public List<Token> ConvertirAPostfija()
     {
@@ -548,9 +597,13 @@ public class AnalizadorSintactico
 
         while (tokenActual != null)
         {
-            if (tokenActual.Type == TokenType.Number || tokenActual.Type == TokenType.Identifier || tokenActual.Type == TokenType.Keyword)
+            if (tokenActual.Type == TokenType.Number || tokenActual.Type == TokenType.Identifier|| 
+            (tokenActual.Type == TokenType.Keyword && (tokenActual.Value == "if" || tokenActual.Value == "else")))
             {
                 salida.Add(tokenActual);  // Añadir operandos a la salida
+                Avanzar();
+            }
+            else if (tokenActual.Type == TokenType.Keyword){
                 Avanzar();
             }
             else if (tokenActual.Value == "(")
@@ -639,21 +692,6 @@ public class AnalizadorSintactico
         return salida;
     }
 
-     public void InsertaNodo(Token token, ref NodoExpresion nodo){
-          if (nodo == null)
-            {
-                NodoExpresion newnode = new NodoExpresion(token);
-                // CAMBIO 2
-
-                if (Raiz == null)
-                    Raiz = Nodo;
-            }
-            else if (token < Nodo.Dato)
-                InsertaNodo(token, ref nodo.Izquierda);
-            else if (token > nodo.Value)
-                InsertaNodo(token, ref nodo.Derecha);      
-    }
-
     public NodoExpresion ConstruirArbol(List<Token> tokens)
     {
         Stack<NodoExpresion> pila = new Stack<NodoExpresion>();
@@ -676,7 +714,6 @@ public class AnalizadorSintactico
                     Izquierda = izquierda,
                     Derecha = derecha
                 };
-
                 pila.Push(nuevoNodo);
             }
         }
