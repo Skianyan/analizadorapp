@@ -648,6 +648,7 @@ public class AnalizadorSintactico
                     if (token.Value == "if") {
                         NodoExpresion ifNode = new NodoExpresion(token);
                         ifHead = ifNode;
+                        mainRightBranch = referenceNode;
 
                         if (referenceNode.Izquierda == null)
                             referenceNode.Izquierda = ifNode;
@@ -677,12 +678,19 @@ public class AnalizadorSintactico
                             // parsear el cuerpo de else
                             NodoExpresion elseBodyNode = ParseBody(tokens, ref i);
                             elseNode.Derecha = elseBodyNode;  // agregar el cuerpo del if como derecha del else
+                            
 
-                            referenceNode = elseNode;  // settear else como nodo de referencia
+                            //referenceNode = elseNode;  // settear else como nodo de referencia
                         } else {
                             // si no se encuentra un else, agregar cuerpo del if a la derecha del if
                             ifNode.Derecha = ifBodyNode;
                         }
+                        /// test block
+                            referenceNode = mainRightBranch;
+                            NodoExpresion nuevaRamaDerecha = new NodoExpresion(new Token(TokenType.Delimiter,";"));
+                            referenceNode.Derecha = nuevaRamaDerecha;
+                            referenceNode = referenceNode.Derecha; 
+                        ///
                     }
                     // Handle 'while' statements
                     if (token.Value == "while") {
