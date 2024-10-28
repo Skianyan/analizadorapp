@@ -20,3 +20,94 @@ El procedimiento para crear el árbol binario AST es el siguiente:
     Por último, devuelve el nodo raíz del árbol binario AST creado y que es precisamente el 
     que se obtiene de desapilar el único nodo binario restante que queda en la PILA.
 
+
+    public NodoExpresion ConstruirArbol(List<Token> tokens)
+    {
+        Stack<NodoExpresion> pila = new Stack<NodoExpresion>();
+        NodoExpresion Main = new NodoExpresion(new Token(TokenType.String, "main"));
+        NodoExpresion mainright = new NodoExpresion(null);
+        NodoExpresion ifhead = new NodoExpresion(null);
+        NodoExpresion referencenode = new NodoExpresion(null);
+        mainright = Main;
+        int ifcondition = 0;
+        int parnest = 0;
+        int blocknest = 0;
+
+        foreach (var token in tokens)
+        {
+            // Manejar el primer nodo Izquierdo del main
+            if (Main.Izquierda == null){
+                if (token.Type == TokenType.Number || token.Type == TokenType.Identifier)
+                {
+                    pila.Push(new NodoExpresion(token));               // crear nodo con token y mandar a pila
+                }
+                else if (token.Type == TokenType.Operator)
+                {
+                    handleOp(token,pila);                              // sacar 2 operandos y crear un nodo con el op 
+                }
+                else if (token.Value == ";"){
+                    NodoExpresion rightlimitnode = new NodoExpresion(token);
+                    Main.Derecha = rightlimitnode;
+                    mainright = rightlimitnode;
+                    referencenode = rightlimitnode;
+                    Main.Izquierda = pila.Pop();
+                }
+            }
+            // Manejar el los nodos subsecuentes, el mainright siempre sera el nodo principal derecho
+            // el reference node se refiere al nodo que estemos manejando.
+            else  {
+                if(referencenode.Izquierda == null)
+                {
+                    if (token.Type == TokenType.Number || token.Type == TokenType.Identifier)
+                    {
+                        pila.Push(new NodoExpresion(token));            // crear nodo con token y mandar a pila
+                    }
+                    else if (token.Type == TokenType.Operator)
+                    {
+                        handleOp(token,pila);                           // sacar 2 operandos y crear un nodo con el op
+                    }
+                }
+                if (token.Type == TokenType.Keyword && token.Value == "if")
+                {
+                    NodoExpresion newif = new NodoExpresion(token); // placeholder para crear nodo if
+                    ifhead = newif;                                 // asignar a la cabeza if
+                    mainright.Izquierda = ifhead;                   // se asigna el nodo if al nodo izq de la rama principal
+                    ifcondition ++;                                 // se denota que estamos dentro de cond if
+                }
+                if (token.Value == "(" ){
+                    parnest++;
+                }
+                if (token.Value == ")" ){
+                    //ifhead.Izquierda = pila.Pop();
+                    parnest--;
+                }
+                if (token.Value == "{"){
+                    blocknest ++;
+                }
+                if (token.Value == "}"){
+                    blocknest --;
+
+                }
+                if(token.Value == ";"){
+                    NodoExpresion rightlimitnode = new NodoExpresion(token);
+                    mainright.Derecha = rightlimitnode;
+                    mainright.Izquierda = pila.Pop();
+                    mainright = rightlimitnode;
+                }
+            }
+        }
+
+        void handleOp(Token token, Stack<NodoExpresion> pila){
+            NodoExpresion derecha = pila.Pop();
+            NodoExpresion izquierda = pila.Pop();
+
+            // crear un nuevo nodo y asignar lo a la izquierda del main
+            NodoExpresion nuevoNodo = new NodoExpresion(token)
+            {
+                Izquierda = izquierda,
+                Derecha = derecha
+            };
+            pila.Push(nuevoNodo);
+        }
+        return Main;
+    }

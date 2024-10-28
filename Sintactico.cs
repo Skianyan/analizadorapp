@@ -1,3 +1,7 @@
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
+
 public class AnalizadorSintactico
 {
     private List<Token> tokens;
@@ -189,12 +193,11 @@ public class AnalizadorSintactico
             Error("Se esperaba ')' después de la condición.");
         }
         Avanzar();  // Avanzar para pasar el paréntesis de cierre
-
         // Evaluar la condición
         int resultadoCondicion = EvaluarExpresion(condicion);
 
         Console.WriteLine($"Condición evaluada: {resultadoCondicion}");
-
+        
         if (resultadoCondicion == 1 && inWhileloop == true)
         {
             // Si la condición es verdadera, procesamos el bloque "if"
@@ -212,7 +215,9 @@ public class AnalizadorSintactico
                 Avanzar();  // Avanzar para pasar el corchete de apertura
                 ParsearInstrucciones();  // Procesar el bloque de instrucciones
             }
-            Avanzar();
+            if (tokens.Count - 1 != pos){
+                Avanzar();
+            }
             if (tokenActual.Value == "else"){
                 SaltarBloque();  // Saltar el bloque "else"
             }
@@ -268,7 +273,7 @@ public class AnalizadorSintactico
 
         initialPosition = this.pos;
         // Repetir mientras la condición sea verdadera
-        while (resultadoCondicion == 1)
+        while (resultadoCondicion == 1 && inWhileloop == true)
         {
             inWhileloop = true;
             this.pos = initialPosition;
@@ -402,7 +407,7 @@ public class AnalizadorSintactico
                     int valor = EvaluarExpresion(expresion);
                     tablaSimbolos[nombreVariable] = valor; // Guardar la variable y su valor en la tabla de símbolos
                     
-                    Console.WriteLine($"Variable {nombreVariable} = {valor} declarada.");
+                    //Console.WriteLine($"Variable {nombreVariable} = {valor} declarada.");
                 }
 
                 if (tokenActual.Value == ";") // Checar que la declaración acabe con ;
@@ -527,120 +532,24 @@ public class AnalizadorSintactico
         foreach (var token in listapostfijo){
             Console.WriteLine(token.Value);
         }   
-        
-        // Console.WriteLine("\nÁrbol Sintáctico Generado:");
-        // NodoExpresion Raiz = new NodoExpresion(null){
-        //     Izquierda = null,
-        //     Derecha = null
-        // };
-        // foreach (var token in listapostfijo){
-        //     InsertaNodo(token,Raiz);
-        // } 
-        
-        var arbol = ConstruirArbol(listapostfijo);
+        Console.WriteLine("\nFin de los token.");
+
+        var arbol = CrearArbol(listapostfijo);
         ImprimirArbol(arbol);
     }
-
-   public NodoExpresion InsertaNodo(Token token, NodoExpresion nodo)
-    {
-        if (nodo == null)
-        {
-            // Crear un nuevo nodo para el token actual
-            return new NodoExpresion(token);
-        }
-        
-        // Si el token es un operador, insertar según la precedencia
-        if (token.Type == TokenType.Operator)
-        {
-            // Comparar la precedencia del operador actual con el nodo existente
-            if (Precedencia(token) > Precedencia(nodo.Token))
-            {
-                // Insertar a la izquierda del nodo actual
-                nodo.Izquierda = InsertaNodo(token, nodo.Izquierda);
-            }
-            else
-            {
-                // Insertar a la derecha (menor o igual precedencia)
-                nodo.Derecha = InsertaNodo(token, nodo.Derecha);
-            }
-        }
-        else
-        {
-            // Si es un operando (número o identificador), lo insertamos como hijo
-            if (nodo.Izquierda == null)
-            {
-                nodo.Izquierda = new NodoExpresion(token);
-            }
-            else if (nodo.Derecha == null)
-            {
-                nodo.Derecha = new NodoExpresion(token);
-            }
-            else
-            {
-                // Si ambos hijos están ocupados, manejar la colisión como necesites
-                Console.WriteLine("Ambos nodos ya ocupados. No se pueden insertar más operandos.");
-            }
-        }
-
-        // Retornar el nodo modificado
-        return nodo;
-    }
-
-
-
 
     public List<Token> ConvertirAPostfija()
     {
         Stack<Token> operadores = new Stack<Token>();  // Pila de operadores
-        Stack<Token> bloques = new Stack<Token>();    // Pila de Bloques
-        List<Token> salida = new List<Token>();      // Cola de salida
+        List<Token> salida = new List<Token>();        // Cola de salida
 
         while (tokenActual != null)
         {
-            if (tokenActual.Type == TokenType.Number || tokenActual.Type == TokenType.Identifier|| 
-            (tokenActual.Type == TokenType.Keyword && (tokenActual.Value == "if" || tokenActual.Value == "else")))
+            if (tokenActual.Type == TokenType.Number || tokenActual.Type == TokenType.Identifier ||
+                (tokenActual.Type == TokenType.Keyword && (tokenActual.Value == "if" || tokenActual.Value == "else" 
+                || tokenActual.Value == "while")))
             {
                 salida.Add(tokenActual);  // Añadir operandos a la salida
-                Avanzar();
-            }
-            else if (tokenActual.Type == TokenType.Keyword){
-                Avanzar();
-            }
-            else if (tokenActual.Value == "(")
-            {
-                operadores.Push(tokenActual);  // Apilar paréntesis de apertura
-                Avanzar();
-            }
-            else if (tokenActual.Value == ")")
-            {
-                // Desapilar hasta encontrar el paréntesis de apertura
-                while (operadores.Count > 0 && operadores.Peek().Value != "(")
-                {
-                    salida.Add(operadores.Pop());
-                    Avanzar();
-                }
-                if (operadores.Count == 0 || operadores.Pop().Value != "(")
-                {
-                    Error("Paréntesis desbalanceados.");
-                }
-            }
-            else if (tokenActual.Value == "{")
-            {
-                bloques.Push(tokenActual);  // Apilar paréntesis de apertura
-                Avanzar();
-            }
-            else if (tokenActual.Value == "}")
-            {
-                // Desapilar hasta encontrar el paréntesis de apertura
-                while (operadores.Count > 0 && operadores.Peek().Value != "{")
-                {
-                    salida.Add(operadores.Pop());
-                    Avanzar();
-                }
-                if (bloques.Count == 0 || bloques.Pop().Value != "{")
-                {
-                    Error("Llaves desbalanceadas.");
-                }
                 Avanzar();
             }
             else if (tokenActual.Type == TokenType.Operator)
@@ -648,85 +557,241 @@ public class AnalizadorSintactico
                 // Apilar operadores según su precedencia
                 while (operadores.Count > 0 &&
                     Precedencia(operadores.Peek()) >= Precedencia(tokenActual) &&
-                    operadores.Peek().Value != "(")
+                    operadores.Peek().Value != "(" && operadores.Peek().Value != "{")
                 {
                     salida.Add(operadores.Pop());
-                    //Avanzar();
                 }
                 operadores.Push(tokenActual);
                 Avanzar();
             }
-            else if (tokenActual.Value == "if")
+            else if (tokenActual.Value == "(" || tokenActual.Value == "{")
             {
-                operadores.Push(tokenActual);  // Apilar "if" para controlar el flujo
+                operadores.Push(tokenActual);  // Apilar paréntesis o llave de apertura
+                salida.Add(tokenActual);      // Incluir en la salida
+                Avanzar();
             }
-            else if (tokenActual.Value == "else")
+            else if (tokenActual.Value == ")" || tokenActual.Value == "}")
             {
-                // Mover los tokens del bloque "if" al bloque "else"
-                while (operadores.Count > 0 && operadores.Peek().Value != "if")
+                // Desapilar hasta encontrar el paréntesis o llave de apertura
+                string apertura = tokenActual.Value == ")" ? "(" : "{";
+                while (operadores.Count > 0 && operadores.Peek().Value != apertura)
                 {
                     salida.Add(operadores.Pop());
-                    Avanzar();
                 }
+                if (operadores.Count == 0 || operadores.Pop().Value != apertura)
+                {
+                    Error("Paréntesis o llaves desbalanceados.");
+                }
+                salida.Add(tokenActual);  // Incluir paréntesis o llave de cierre en la salida
+                Avanzar();
             }
-            else if (tokenActual.Value == ";"){
+            else if (tokenActual.Value == ";")
+            {
+                // Vaciar la pila de operadores hasta que esté vacío o hasta encontrar un bloque
                 while (operadores.Count > 0 && operadores.Peek().Value != "{")
                 {
                     salida.Add(operadores.Pop());
-                    Avanzar();
                 }
+                salida.Add(tokenActual);  // Añadir punto y coma a la salida
+                Avanzar();
+            }
+            else {
+                Avanzar();
             }
         }
 
+        // Añadir los operadores restantes en la pila a la salida
         while (operadores.Count > 0)
         {
             Token operador = operadores.Pop();
-            if (operador.Value == "(" || operador.Value == "{" )
+            if (operador.Value == "(" || operador.Value == "{")
             {
                 Error("Bloques desbalanceados.");
             }
             salida.Add(operador);
-            Avanzar();
         }
 
         return salida;
     }
 
-    public NodoExpresion ConstruirArbol(List<Token> tokens)
-    {
-        Stack<NodoExpresion> pila = new Stack<NodoExpresion>();
 
-        foreach (var token in tokens)
-        {
-            if (token.Type == TokenType.Number || token.Type == TokenType.Identifier)
-            {
-                // Crear un nodo con el token como raiz
-                pila.Push(new NodoExpresion(token));
-            }
-            else if (token.Type == TokenType.Operator)
-            {
-                NodoExpresion derecha = pila.Pop();
-                NodoExpresion izquierda = pila.Pop();
+    public NodoExpresion CrearArbol(List<Token> tokens){
+        Stack<NodoExpresion> TokenStack = new Stack<NodoExpresion>();
+        NodoExpresion MainNode = new NodoExpresion(new Token(TokenType.String, "main"));
+        NodoExpresion mainRightBranch = new NodoExpresion(null);
+        NodoExpresion ifHead = new NodoExpresion(null);
+        NodoExpresion referenceNode = new NodoExpresion(null);
+        referenceNode = MainNode;
 
-                // crear un nuevo nodo 
-                NodoExpresion nuevoNodo = new NodoExpresion(token)
-                {
-                    Izquierda = izquierda,
-                    Derecha = derecha
-                };
-                pila.Push(nuevoNodo);
+        // Checar tokens uno por uno
+        for (int i = 0; i < tokens.Count; i++){
+            var token = tokens[i];  // token == token actual
+            
+            if (i < tokens.Count - 1){
+                var nextToken = tokens[i+1];    // el siguiente token
+
+                if (referenceNode.Izquierda == null){
+                    if (token.Type == TokenType.Number || token.Type == TokenType.Identifier){
+                        TokenStack.Push(new NodoExpresion(token));  // agregar el token si es un operando
+                    }
+                    if (token.Type == TokenType.Operator){
+                        handleOp(token,TokenStack);
+                    }
+                    if (token.Value == ";" && referenceNode.Izquierda == null){
+                        NodoExpresion nuevaRamaDerecha = new NodoExpresion(token);
+                        referenceNode.Derecha = nuevaRamaDerecha;
+                        referenceNode.Izquierda = TokenStack.Pop();
+                        referenceNode = referenceNode.Derecha;
+                    }
+
+                    // Manejar if - else
+                    if (token.Value == "if") {
+                        NodoExpresion ifNode = new NodoExpresion(token);
+                        ifHead = ifNode;
+
+                        if (referenceNode.Izquierda == null)
+                            referenceNode.Izquierda = ifNode;
+                        else
+                            referenceNode.Derecha = ifNode;
+
+                        referenceNode = ifNode;
+
+                        // parsear la condicion del if y el cuerpo del if
+                        NodoExpresion conditionNode = ParseCondition(tokens, ref i);
+                        NodoExpresion ifBodyNode = ParseBody(tokens, ref i);
+                        
+                        ifNode.Izquierda = conditionNode;
+
+                        // checar si hay un nodo else despues del if
+                        if (i < tokens.Count - 1 && tokens[i + 1].Value == "else") {
+                            i++;  // avanzar a else
+                            var elseToken = tokens[i];
+                            
+                            // crear un nodo else
+                            NodoExpresion elseNode = new NodoExpresion(elseToken);
+                            ifNode.Derecha = elseNode;  // agregar else a la derecha de if
+
+                            // agregar el cuerpo del if a la izquierda del else
+                            elseNode.Izquierda = ifBodyNode;
+
+                            // parsear el cuerpo de else
+                            NodoExpresion elseBodyNode = ParseBody(tokens, ref i);
+                            elseNode.Derecha = elseBodyNode;  // agregar el cuerpo del if como derecha del else
+
+                            referenceNode = elseNode;  // settear else como nodo de referencia
+                        } else {
+                            // si no se encuentra un else, agregar cuerpo del if a la derecha del if
+                            ifNode.Derecha = ifBodyNode;
+                        }
+                    }
+                    // Handle 'while' statements
+                    if (token.Value == "while") {
+                        NodoExpresion whileNode = new NodoExpresion(token);
+
+                        // Attach 'while' node to the current reference node
+                        if (referenceNode.Izquierda == null)
+                            referenceNode.Izquierda = whileNode;
+                        else
+                            referenceNode.Derecha = whileNode;
+
+                        referenceNode = whileNode;
+
+                        // Parse condition and body for 'while'
+                        NodoExpresion conditionNode = ParseCondition(tokens, ref i);
+                        NodoExpresion whileBodyNode = ParseBody(tokens, ref i);
+                        
+                        // Attach condition and body to 'while' node
+                        whileNode.Izquierda = conditionNode;
+                        whileNode.Derecha = whileBodyNode;
+                    }
+                }
             }
+
+        }
+        // Metodo para parsear la condicion del if
+        static NodoExpresion ParseCondition(List<Token> tokens, ref int i){
+            Stack<NodoExpresion> conditionStack = new Stack<NodoExpresion>();
+
+            i++; // avanzar a '('
+
+            if (tokens[i].Value != "(") {
+                throw new Exception("Se esperaba '(' despues de 'if'");
+            }
+
+            i++; // Parsear tokens dentro de la condicion
+
+            while (i < tokens.Count && tokens[i].Value != ")") {
+                var token = tokens[i];
+
+                // Handle operand tokens (identifiers, numbers)
+                if (token.Type == TokenType.Identifier || token.Type == TokenType.Number) {
+                    conditionStack.Push(new NodoExpresion(token));
+                }
+                // Handle operator tokens
+                else if (token.Type == TokenType.Operator) {
+                    handleOp(token, conditionStack);
+                }
+
+                i++; // Move to the next token
+            }
+
+            // Ensure we reached the end of the condition
+            if (i >= tokens.Count || tokens[i].Value != ")") {
+                throw new Exception("Expected ')' at the end of condition");
+            }
+
+            // Return the top of the stack as the root node of the condition
+            return conditionStack.Count > 0 ? conditionStack.Pop() : null;
         }
 
-        // regresar la raiz..
-        return pila.Pop();
+        static NodoExpresion ParseBody(List<Token> tokens, ref int i) {
+            Stack<NodoExpresion> bodyStack = new Stack<NodoExpresion>();
+
+            i++; // Move to the first token after '{'
+
+            while (i < tokens.Count && tokens[i].Value != "}" && tokens[i].Value != "else") {
+                var token = tokens[i];
+
+                if (token.Type == TokenType.Identifier || token.Type == TokenType.Number) {
+                    bodyStack.Push(new NodoExpresion(token));
+                } else if (token.Type == TokenType.Operator) {
+                    handleOp(token, bodyStack);
+                } else if (token.Value == ";") {
+                    NodoExpresion statementNode = bodyStack.Pop();
+                    NodoExpresion newStatementBranch = new NodoExpresion(new Token(TokenType.String, ";"));
+                    newStatementBranch.Izquierda = statementNode;
+
+                    if (bodyStack.Count == 0) {
+                        bodyStack.Push(newStatementBranch);
+                    } else {
+                        NodoExpresion currentBody = bodyStack.Pop();
+                        currentBody.Derecha = newStatementBranch;
+                        bodyStack.Push(currentBody);
+                    }
+                }
+                
+                i++; // Move to the next token
+            }
+            if (i >= tokens.Count || tokens[i].Value != "}") {
+                throw new Exception("Expected '}' at the end of body");
+            }
+
+            // Regresar el bodyStack
+            return bodyStack.Count > 0 ? bodyStack.Pop() : null;
+        }
+
+        static void handleOp(Token token, Stack<NodoExpresion> TokenStack){
+            NodoExpresion derecha = TokenStack.Pop();
+            NodoExpresion izquierda = TokenStack.Pop();
+
+            // crear un nuevo nodo y asignar lo a la izquierda del main
+            NodoExpresion nuevoNodo = new NodoExpresion(token)
+            {
+                Izquierda = izquierda,
+                Derecha = derecha
+            };
+            TokenStack.Push(nuevoNodo);
+        }
+        return MainNode;
     }
-
 }
-
-/*
-    Agregar todos los token a una pila al momento de ser evaluados para crear un arbol al final
-
-    -- crear un stack con todos los token leidos
-    -- recorrerlo de manera postfija para generar un arbol sintactico
-*/
