@@ -11,7 +11,8 @@ public class AnalizadorSintactico
     private Stack<NodoExpresion> operandos; // Pila para operandos (nodos de expresiones)
     private Stack<Token> operadores; // Pila para operadores
     private Queue<Token> colaTokens; // cola de todos los Tokens
-
+    public int labelCounter = 1;
+    public int tempVarCounter = 1;
     public int initialPosition = 0;
     public bool inWhileloop = false;
 
@@ -536,6 +537,97 @@ public class AnalizadorSintactico
 
         var arbol = CrearArbol(listapostfijo);
         ImprimirArbol(arbol);
+
+        var codigoIntermedio = GenerarCodigoIntermedio(arbol);
+        foreach (var line in codigoIntermedio){
+            Console.WriteLine(line);
+        }
+    }
+
+    public List<string> GenerarCodigoIntermedio(NodoExpresion root)
+    {
+        List<string> codigoIntermedio = new List<string>(); // Lista de codigo intermedio
+        GenerarCodigo(root, codigoIntermedio);
+        return codigoIntermedio;
+    }
+
+    private string GenerarCodigo(NodoExpresion nodo, List<string> codigoIntermedio)
+    {
+        if (nodo == null) return "";
+
+        // Procesar los nodos de la main branch, siempre seran entre 'main' o ';'
+        if (nodo.Token.Value == ";" || nodo.Token.Value == "main") {
+            GenerarCodigo(nodo.Izquierda, codigoIntermedio);  // Process left child
+            GenerarCodigo(nodo.Derecha, codigoIntermedio);    // Process right child
+            return "";
+        }
+
+        // Asignaciones de variables
+        if (nodo.Token.Value == "=") {
+            string nomVariable = nodo.Izquierda.Token.Value;
+            
+            // Generate right-hand side expression and store result in a temporary variable
+            string rightOperand = GenerarCodigo(nodo.Derecha, codigoIntermedio);
+            string tempVar = $"t{tempVarCounter++}";
+            codigoIntermedio.Add($"{tempVar} = {rightOperand}");
+
+            // Assign temporary variable to the target variable
+            codigoIntermedio.Add($"{nomVariable} = {tempVar}");
+            return nomVariable;
+        }
+
+        // Operadores Aritmeticos
+        if (nodo.Token.Type == TokenType.Operator) {
+            string opIzq = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
+            string opDer = GenerarCodigo(nodo.Derecha, codigoIntermedio);
+            string tempVar = $"t{tempVarCounter++}";
+            codigoIntermedio.Add($"{tempVar} = {opIzq} {nodo.Token.Value} {opDer}");
+            return tempVar;
+        }
+
+        // Manejar sentencias IF
+        if (nodo.Token.Value == "if") {
+            string condicion = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
+            string trueLabel = $"L{labelCounter++}";
+            string endLabel = $"L{labelCounter++}";
+
+            codigoIntermedio.Add($"if {condicion} goto {trueLabel}");
+
+            // Codigo intermedio para 'else'
+            if (nodo.Derecha != null && nodo.Derecha.Token.Value == "else") {
+                NodoExpresion elseNode = nodo.Derecha;
+                GenerarCodigo(elseNode.Izquierda, codigoIntermedio);  // Genera codigointermedio para bloque else
+                codigoIntermedio.Add($"goto {endLabel}");
+                codigoIntermedio.Add($"{trueLabel}:");
+                GenerarCodigo(nodo.Izquierda, codigoIntermedio);      // Genera codigointermedio para bloque 'if'
+                codigoIntermedio.Add($"{endLabel}:");
+            } else {
+                codigoIntermedio.Add($"{trueLabel}:");
+                GenerarCodigo(nodo.Izquierda, codigoIntermedio);      // Genera codigointermedio para bloque 'if'
+                codigoIntermedio.Add($"{endLabel}:");
+            }
+            return "";
+        }
+
+        // Manejar sentencias while
+        if (nodo.Token.Value == "while") {
+            string startLabel = $"L{labelCounter++}";
+            string endLabel = $"L{labelCounter++}";
+
+            codigoIntermedio.Add($"{startLabel}:");
+            string condition = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
+            codigoIntermedio.Add($"if not {condition} goto {endLabel}");
+            
+            // genera codigo intermedio para bloque while
+            GenerarCodigo(nodo.Derecha, codigoIntermedio);
+            
+            // regresar si no se cumple
+            codigoIntermedio.Add($"goto {startLabel}");
+            codigoIntermedio.Add($"{endLabel}:");
+            return "";
+        }
+
+        return nodo.Token.Value;
     }
 
     public List<Token> ConvertirAPostfija()
@@ -613,7 +705,6 @@ public class AnalizadorSintactico
 
         return salida;
     }
-
 
     public NodoExpresion CrearArbol(List<Token> tokens){
         Stack<NodoExpresion> TokenStack = new Stack<NodoExpresion>();
