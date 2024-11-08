@@ -557,8 +557,8 @@ public class AnalizadorSintactico
 
         // Procesar los nodos de la main branch, siempre seran entre 'main' o ';'
         if (nodo.Token.Value == ";" || nodo.Token.Value == "main") {
-            GenerarCodigo(nodo.Izquierda, codigoIntermedio);  // Process left child
-            GenerarCodigo(nodo.Derecha, codigoIntermedio);    // Process right child
+            GenerarCodigo(nodo.Izquierda, codigoIntermedio);  // Procesar branch izquierdo
+            GenerarCodigo(nodo.Derecha, codigoIntermedio);    // Procesar branch derecho
             return "";
         }
 
@@ -566,17 +566,18 @@ public class AnalizadorSintactico
         if (nodo.Token.Value == "=") {
             string nomVariable = nodo.Izquierda.Token.Value;
             
-            // Generate right-hand side expression and store result in a temporary variable
+            // Generar la expresion del lado derecho y guardar el resultado en una variable temporal
             string rightOperand = GenerarCodigo(nodo.Derecha, codigoIntermedio);
             string tempVar = $"t{tempVarCounter++}";
             codigoIntermedio.Add($"{tempVar} = {rightOperand}");
 
-            // Assign temporary variable to the target variable
+            // Asignar el valor temporal a la variable a asignar
             codigoIntermedio.Add($"{nomVariable} = {tempVar}");
             return nomVariable;
         }
 
         // Operadores Aritmeticos
+        // solo operadores que utilizan dos operandos, como '+', '-', '*', '/'
         if (nodo.Token.Type == TokenType.Operator) {
             string opIzq = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
             string opDer = GenerarCodigo(nodo.Derecha, codigoIntermedio);
@@ -588,8 +589,8 @@ public class AnalizadorSintactico
         // Manejar sentencias IF
         if (nodo.Token.Value == "if") {
             string condicion = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
-            string trueLabel = $"L{labelCounter++}";
-            string endLabel = $"L{labelCounter++}";
+            string trueLabel = $"L{labelCounter++}";    // Variable de label inicial
+            string endLabel = $"L{labelCounter++}";     // Variable de label final
 
             codigoIntermedio.Add($"if {condicion} goto {trueLabel}");
 
@@ -611,8 +612,8 @@ public class AnalizadorSintactico
 
         // Manejar sentencias while
         if (nodo.Token.Value == "while") {
-            string startLabel = $"L{labelCounter++}";
-            string endLabel = $"L{labelCounter++}";
+            string startLabel = $"L{labelCounter++}";   // Variable de label inicial
+            string endLabel = $"L{labelCounter++}";     // Variable de label final
 
             codigoIntermedio.Add($"{startLabel}:");
             string condition = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
