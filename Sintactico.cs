@@ -524,34 +524,44 @@ public class AnalizadorSintactico
     // COSAS PARA GENERAR EL ARBOL SINTACTICO
     public void FinalizarAnalisis()
     {
-        // reset los tokens
+        // resetear los tokens
         pos = 0;
         tokenActual = tokens[pos];
         
-        List<Token> listapostfijo = ConvertirAPostfija();  // Convertir a notación postfija.
-        Console.WriteLine("\nTokens en orden postfijo:");
-        foreach (var token in listapostfijo){
-            Console.WriteLine(token.Value);
-        }   
-        Console.WriteLine("\nFin de los token.");
+        // Convertir a notación postfija.
+        List<Token> listapostfijo = ConvertirAPostfija();  
 
+        // Listar los tokens en orden postfijo
+        // Console.WriteLine("\nTokens en orden postfijo:");
+        // foreach (var token in listapostfijo){
+        //     Console.WriteLine(token.Value);
+        // }   
+        // Console.WriteLine("\nFin de los token.");
+
+        // Crear el arbol sintactico con los tokens postfijos
         var arbol = CrearArbol(listapostfijo);
+
+        // Imprimir el arbol binario sintactico
         ImprimirArbol(arbol);
 
+        // Convertir el arbol binario sintactico a codigo intermedio
         var codigoIntermedio = GenerarCodigoIntermedio(arbol);
-        foreach (var line in codigoIntermedio){
-            Console.WriteLine(line);
-        }
+        
+        // Imprimir el codigo intermedio
+        Console.WriteLine(Quadruple.ToIntermediateCode(codigoIntermedio));
+
+        // Imprimir la tabla de los cuadruplos
+        Console.WriteLine(Quadruple.ToTable(codigoIntermedio));
     }
 
-    public List<string> GenerarCodigoIntermedio(NodoExpresion root)
+    public List<Quadruple> GenerarCodigoIntermedio(NodoExpresion root)
     {
-        List<string> codigoIntermedio = new List<string>(); // Lista de codigo intermedio
+        List<Quadruple> codigoIntermedio = new List<Quadruple>(); // Lista de codigo intermedio
         GenerarCodigo(root, codigoIntermedio);
         return codigoIntermedio;
     }
 
-    private string GenerarCodigo(NodoExpresion nodo, List<string> codigoIntermedio)
+    private string GenerarCodigo(NodoExpresion nodo, List<Quadruple> codigoIntermedio)
     {
         if (nodo == null) return "";
 
@@ -564,67 +574,83 @@ public class AnalizadorSintactico
 
         // Asignaciones de variables
         if (nodo.Token.Value == "=") {
-            string nomVariable = nodo.Izquierda.Token.Value;
-            
-            // Generar la expresion del lado derecho y guardar el resultado en una variable temporal
-            string rightOperand = GenerarCodigo(nodo.Derecha, codigoIntermedio);
-            string tempVar = $"t{tempVarCounter++}";
-            codigoIntermedio.Add($"{tempVar} = {rightOperand}");
+        string variableName = nodo.Izquierda.Token.Value;
+        
+        // Generate right-hand side expression and store result in a temporary variable
+        string rightOperand = GenerarCodigo(nodo.Derecha, codigoIntermedio);
+        string tempVar = $"t{tempVarCounter++}";
 
-            // Asignar el valor temporal a la variable a asignar
-            codigoIntermedio.Add($"{nomVariable} = {tempVar}");
-            return nomVariable;
+        // Create a Quadruple for the temporary assignment
+        codigoIntermedio.Add(new Quadruple("=", rightOperand, null, tempVar));
+
+        // Create a Quadruple for the final assignment to the target variable
+        codigoIntermedio.Add(new Quadruple("=", tempVar, null, variableName));
+            return variableName;
         }
 
         // Operadores Aritmeticos
         // solo operadores que utilizan dos operandos, como '+', '-', '*', '/'
         if (nodo.Token.Type == TokenType.Operator) {
-            string opIzq = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
-            string opDer = GenerarCodigo(nodo.Derecha, codigoIntermedio);
-            string tempVar = $"t{tempVarCounter++}";
-            codigoIntermedio.Add($"{tempVar} = {opIzq} {nodo.Token.Value} {opDer}");
-            return tempVar;
+        string leftOperand = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
+        string rightOperand = GenerarCodigo(nodo.Derecha, codigoIntermedio);
+        string tempVar = $"t{tempVarCounter++}";
+
+        // Create a Quadruple for the operation
+        codigoIntermedio.Add(new Quadruple(nodo.Token.Value, leftOperand, rightOperand, tempVar));
+
+        return tempVar;
         }
 
         // Manejar sentencias IF
         if (nodo.Token.Value == "if") {
-            string condicion = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
-            string trueLabel = $"L{labelCounter++}";    // Variable de label inicial
-            string endLabel = $"L{labelCounter++}";     // Variable de label final
+        string condition = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
+        string trueLabel = $"L{labelCounter++}";
+        string endLabel = $"L{labelCounter++}";
 
-            codigoIntermedio.Add($"if {condicion} goto {trueLabel}");
+        // Crear cuadruplo si la condicion es 'if'
+        codigoIntermedio.Add(new Quadruple("if", condition, null, trueLabel));
 
-            // Codigo intermedio para 'else'
-            if (nodo.Derecha != null && nodo.Derecha.Token.Value == "else") {
-                NodoExpresion elseNode = nodo.Derecha;
-                GenerarCodigo(elseNode.Izquierda, codigoIntermedio);  // Genera codigointermedio para bloque else
-                codigoIntermedio.Add($"goto {endLabel}");
-                codigoIntermedio.Add($"{trueLabel}:");
-                GenerarCodigo(nodo.Izquierda, codigoIntermedio);      // Genera codigointermedio para bloque 'if'
-                codigoIntermedio.Add($"{endLabel}:");
-            } else {
-                codigoIntermedio.Add($"{trueLabel}:");
-                GenerarCodigo(nodo.Izquierda, codigoIntermedio);      // Genera codigointermedio para bloque 'if'
-                codigoIntermedio.Add($"{endLabel}:");
-            }
-            return "";
+        // generar codigo para 'else' 
+        if (nodo.Derecha != null && nodo.Derecha.Token.Value == "else") {
+            NodoExpresion elseNode = nodo.Derecha;
+            // generar codigo para bloque else
+            GenerarCodigo(elseNode.Izquierda, codigoIntermedio);  
+            codigoIntermedio.Add(new Quadruple("goto", null, null, endLabel));
+            codigoIntermedio.Add(new Quadruple("label", null, null, trueLabel));
+            // generar codigo para bloque 'if'
+            GenerarCodigo(nodo.Izquierda, codigoIntermedio);      
+            codigoIntermedio.Add(new Quadruple("label", null, null, endLabel));
+        } else {
+            codigoIntermedio.Add(new Quadruple("label", null, null, trueLabel));
+            // generar codigo para bloque 'if' 
+            GenerarCodigo(nodo.Izquierda, codigoIntermedio);      
+            codigoIntermedio.Add(new Quadruple("label", null, null, endLabel));
+        }
+        return "";
         }
 
         // Manejar sentencias while
         if (nodo.Token.Value == "while") {
-            string startLabel = $"L{labelCounter++}";   // Variable de label inicial
-            string endLabel = $"L{labelCounter++}";     // Variable de label final
+            string startLabel = $"L{labelCounter++}";
+            string endLabel = $"L{labelCounter++}";
 
-            codigoIntermedio.Add($"{startLabel}:");
+            // Label al inicio del loop
+            codigoIntermedio.Add(new Quadruple("label", null, null, startLabel));
+
             string condition = GenerarCodigo(nodo.Izquierda, codigoIntermedio);
-            codigoIntermedio.Add($"if not {condition} goto {endLabel}");
             
-            // genera codigo intermedio para bloque while
+            // Salto condicional al final del loop
+            codigoIntermedio.Add(new Quadruple("ifnot", condition, null, endLabel));
+
+            // Codigo para el cuerpo del loop (right child)
             GenerarCodigo(nodo.Derecha, codigoIntermedio);
+
+            // Salto al inicio del loop
+            codigoIntermedio.Add(new Quadruple("goto", null, null, startLabel));
             
-            // regresar si no se cumple
-            codigoIntermedio.Add($"goto {startLabel}");
-            codigoIntermedio.Add($"{endLabel}:");
+            // Label al final del loop
+            codigoIntermedio.Add(new Quadruple("label", null, null, endLabel));
+
             return "";
         }
 
