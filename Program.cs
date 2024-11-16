@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.Design;
 
-public enum TokenType // Constantes utilizadas
+public enum TokenType
 {
     Identifier,
     Keyword,
@@ -9,7 +9,7 @@ public enum TokenType // Constantes utilizadas
     String,
     Operator,
     Delimiter, 
-
+    Separator,
 }
 class Program
 {
@@ -37,32 +37,28 @@ class Program
             List<Token> tokens = lexer.GetTokens();
 
             AnalizadorSintactico parser = new AnalizadorSintactico(tokens);
-            // Imprimir tabla de tokens
-            // PrintTokens(tokens);
-
-            // Procesar todas las instrucciones
             parser.ParsearInstrucciones();
-
-            parser.ImprimirTablaSimbolos(); // imprime los simbolos y sus valores.
+            parser.FinalizarAnalisis();
+            parser.ImprimirTablaSimbolos();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error al procesar el archivo: {ex.Message}");
         }
     }
+
     public static void PrintTokens(List<Token> tokens)
     {
-        // Header
         string header = $"{"Type",-15} {"Value",-20} {"IsKeyword",-10} {"DataType",-10}";
         Console.WriteLine(header);
-        Console.WriteLine(new string('-',header.Length));
+        Console.WriteLine(new string('-', header.Length));
 
-        // Tabla
-        foreach(var token in tokens){
+        foreach (var token in tokens)
+        {
             string type = token.Type.ToString();
             string value = token.Value;
             string isKeyword = token.IsKeyword ? "Yes" : "No";
-            string dataType = token.DataType ?? "-";  // Checar si es null el tipo de dato, usar "-" si es null. (no funciona?) 
+            string dataType = string.IsNullOrEmpty(token.DataType) ? "-" : token.DataType; // Verificación para nulos y vacíos.
 
             Console.WriteLine($"{type,-15} {value,-20} {isKeyword,-10} {dataType,-10}");
         }
