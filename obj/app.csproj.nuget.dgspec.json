@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\ricar\\OneDrive\\Documentos\\GitHub\\analizadorapp\\app.csproj": {}
+    "C:\\Users\\ricar\\Documents\\GitHub\\Escuela\\analizadorapp\\app.csproj": {}
   },
   "projects": {
-    "C:\\Users\\ricar\\OneDrive\\Documentos\\GitHub\\analizadorapp\\app.csproj": {
+    "C:\\Users\\ricar\\Documents\\GitHub\\Escuela\\analizadorapp\\app.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\ricar\\OneDrive\\Documentos\\GitHub\\analizadorapp\\app.csproj",
+        "projectUniqueName": "C:\\Users\\ricar\\Documents\\GitHub\\Escuela\\analizadorapp\\app.csproj",
         "projectName": "app",
-        "projectPath": "C:\\Users\\ricar\\OneDrive\\Documentos\\GitHub\\analizadorapp\\app.csproj",
+        "projectPath": "C:\\Users\\ricar\\Documents\\GitHub\\Escuela\\analizadorapp\\app.csproj",
         "packagesPath": "C:\\Users\\ricar\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\ricar\\OneDrive\\Documentos\\GitHub\\analizadorapp\\obj\\",
+        "outputPath": "C:\\Users\\ricar\\Documents\\GitHub\\Escuela\\analizadorapp\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\ricar\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -60,7 +60,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.202/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.205/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
