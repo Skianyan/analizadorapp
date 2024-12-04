@@ -40,6 +40,7 @@ class Program
             parser.ParsearInstrucciones();
             parser.FinalizarAnalisis();
             parser.ImprimirTablaSimbolos();
+            PrintTokens(tokens);
         }
         catch (Exception ex)
         {

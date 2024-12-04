@@ -53,8 +53,9 @@ public class Quadruple {
     }
 
     public static string ToAssembly(List<Quadruple> quadruples) {
+        //para crear un string con todas las lineas de asm
         var assemblyCode = new System.Text.StringBuilder();
-
+        
         foreach (var quad in quadruples) {
             switch (quad.Operator) {
                 case "=":

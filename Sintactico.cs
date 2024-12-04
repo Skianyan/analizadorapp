@@ -64,7 +64,7 @@ public class AnalizadorSintactico
     private void SaltarBloque()
     {
         int contadorLlaves = 1;
-        Avanzar();  // Avanzar al siguiente token
+        Avanzar();
         while (contadorLlaves > 0 && tokenActual != null)
         {
            
@@ -76,7 +76,7 @@ public class AnalizadorSintactico
             {
                 contadorLlaves--;  // Encontramos una llave de cierre
             }
-             Avanzar();  // Avanzar al siguiente token
+             Avanzar(); 
         }
     }
 
@@ -159,6 +159,7 @@ public class AnalizadorSintactico
             else
             {
                 NodoExpresion expresion = Expresion(); // Procesamos la expresión cuando no es un "if"
+
                 //Console.WriteLine("\nÁrbol Sintáctico de la Expresión:");
                 //ImprimirArbol(expresion); // Imprimir el árbol sintáctico
 
@@ -404,6 +405,7 @@ public class AnalizadorSintactico
                     Avanzar();
                     NodoExpresion expresion = Expresion();
                     //ImprimirArbol(expresion);
+
                     // Evaluar la expresión (suponiendo que solo tenemos números, no expresiones)
                     int valor = EvaluarExpresion(expresion);
                     tablaSimbolos[nombreVariable] = valor; // Guardar la variable y su valor en la tabla de símbolos
@@ -579,14 +581,14 @@ public class AnalizadorSintactico
         if (nodo.Token.Value == "=") {
         string variableName = nodo.Izquierda.Token.Value;
         
-        // Generate right-hand side expression and store result in a temporary variable
+        // genrerar la parte derecha y asignar a var temporal
         string rightOperand = GenerarCodigo(nodo.Derecha, codigoIntermedio);
         string tempVar = $"t{tempVarCounter++}";
 
-        // Create a Quadruple for the temporary assignment
+        // Crear un quadruplo temporal
         codigoIntermedio.Add(new Quadruple("=", rightOperand, null, tempVar));
 
-        // Create a Quadruple for the final assignment to the target variable
+        // crear el cuadruplo
         codigoIntermedio.Add(new Quadruple("=", tempVar, null, variableName));
             return variableName;
         }
@@ -598,7 +600,7 @@ public class AnalizadorSintactico
         string rightOperand = GenerarCodigo(nodo.Derecha, codigoIntermedio);
         string tempVar = $"t{tempVarCounter++}";
 
-        // Create a Quadruple for the operation
+        // crear un cradruplo para la operacion
         codigoIntermedio.Add(new Quadruple(nodo.Token.Value, leftOperand, rightOperand, tempVar));
 
         return tempVar;
@@ -813,11 +815,10 @@ public class AnalizadorSintactico
                             referenceNode = referenceNode.Derecha; 
                         ///
                     }
-                    // Handle 'while' statements
+                    // manejo de while
                     if (token.Value == "while") {
                         NodoExpresion whileNode = new NodoExpresion(token);
 
-                        // Attach 'while' node to the current reference node
                         if (referenceNode.Izquierda == null)
                             referenceNode.Izquierda = whileNode;
                         else
@@ -825,11 +826,9 @@ public class AnalizadorSintactico
 
                         referenceNode = whileNode;
 
-                        // Parse condition and body for 'while'
                         NodoExpresion conditionNode = ParseCondition(tokens, ref i);
                         NodoExpresion whileBodyNode = ParseBody(tokens, ref i);
                         
-                        // Attach condition and body to 'while' node
                         whileNode.Izquierda = conditionNode;
                         whileNode.Derecha = whileBodyNode;
                     }
@@ -852,32 +851,29 @@ public class AnalizadorSintactico
             while (i < tokens.Count && tokens[i].Value != ")") {
                 var token = tokens[i];
 
-                // Handle operand tokens (identifiers, numbers)
+                // manejar operandos, identificadores
                 if (token.Type == TokenType.Identifier || token.Type == TokenType.Number) {
                     conditionStack.Push(new NodoExpresion(token));
                 }
-                // Handle operator tokens
+                // manejar operadores
                 else if (token.Type == TokenType.Operator) {
                     handleOp(token, conditionStack);
                 }
 
-                i++; // Move to the next token
+                i++; 
             }
 
-            // Ensure we reached the end of the condition
             if (i >= tokens.Count || tokens[i].Value != ")") {
                 throw new Exception("Expected ')' at the end of condition");
             }
 
-            // Return the top of the stack as the root node of the condition
             return conditionStack.Count > 0 ? conditionStack.Pop() : null;
         }
 
         static NodoExpresion ParseBody(List<Token> tokens, ref int i) {
             Stack<NodoExpresion> bodyStack = new Stack<NodoExpresion>();
 
-            i++; // Move to the first token after '{'
-
+            i++; 
             while (i < tokens.Count && tokens[i].Value != "}" && tokens[i].Value != "else") {
                 var token = tokens[i];
 
@@ -899,7 +895,7 @@ public class AnalizadorSintactico
                     }
                 }
                 
-                i++; // Move to the next token
+                i++;
             }
             if (i >= tokens.Count || tokens[i].Value != "}") {
                 throw new Exception("Expected '}' at the end of body");
