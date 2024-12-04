@@ -51,4 +51,62 @@ public class Quadruple {
 
         return table.ToString();
     }
+
+    public static string ToAssembly(List<Quadruple> quadruples) {
+        var assemblyCode = new System.Text.StringBuilder();
+
+        foreach (var quad in quadruples) {
+            switch (quad.Operator) {
+                case "=":
+                    assemblyCode.AppendLine($"MOV {quad.Result}, {quad.Operand1}");
+                    break;
+                case "+":
+                    assemblyCode.AppendLine($"MOV EAX, {quad.Operand1}");
+                    assemblyCode.AppendLine($"ADD EAX, {quad.Operand2}");
+                    assemblyCode.AppendLine($"MOV {quad.Result}, EAX");
+                    break;
+                case "-":
+                    assemblyCode.AppendLine($"MOV EAX, {quad.Operand1}");
+                    assemblyCode.AppendLine($"SUB EAX, {quad.Operand2}");
+                    assemblyCode.AppendLine($"MOV {quad.Result}, EAX");
+                    break;
+                case ">":
+                    assemblyCode.AppendLine($"CMP {quad.Operand1}, {quad.Operand2}");
+                    assemblyCode.AppendLine($"JG {quad.Result}");
+                    break;
+                case "<":
+                    assemblyCode.AppendLine($"CMP {quad.Operand1}, {quad.Operand2}");
+                    assemblyCode.AppendLine($"JL {quad.Result}");
+                    break;
+                case ">=":
+                    assemblyCode.AppendLine($"CMP {quad.Operand1}, {quad.Operand2}");
+                    assemblyCode.AppendLine($"JGE {quad.Result}");
+                    break;
+                case "<=":
+                    assemblyCode.AppendLine($"CMP {quad.Operand1}, {quad.Operand2}");
+                    assemblyCode.AppendLine($"JLE {quad.Result}");
+                    break;
+                case "if":
+                    assemblyCode.AppendLine($"CMP {quad.Operand1}, 0");
+                    assemblyCode.AppendLine($"JNE {quad.Result}");
+                    break;
+                case "ifnot":
+                    assemblyCode.AppendLine($"CMP {quad.Operand1}, 0");
+                    assemblyCode.AppendLine($"JE {quad.Result}");
+                    break;
+                case "goto":
+                    assemblyCode.AppendLine($"JMP {quad.Result}");
+                    break;
+                case "label":
+                    assemblyCode.AppendLine($"{quad.Result}:");
+                    break;
+                default:
+                    throw new InvalidOperationException($"Operador desconocido: {quad.Operator}");
+            }
+        }
+
+        return assemblyCode.ToString();
+    }
+
+
 }

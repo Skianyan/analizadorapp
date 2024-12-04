@@ -552,6 +552,9 @@ public class AnalizadorSintactico
 
         // Imprimir la tabla de los cuadruplos
         Console.WriteLine(Quadruple.ToTable(codigoIntermedio));
+
+        // Imprimir el codigo ensamblador
+        Console.WriteLine(Quadruple.ToAssembly(codigoIntermedio));
     }
 
     public List<Quadruple> GenerarCodigoIntermedio(NodoExpresion root)
